@@ -1,0 +1,6 @@
+scenario,A,B,C,D
+Equal Weights,Grid-scale ESS,Home/Distributed ESS,Direct Recycling,Direct Recycling
+Literature Mean,Grid-scale ESS,Home/Distributed ESS,Direct Recycling,Direct Recycling
+Technical-Heavy,Grid-scale ESS,Home/Distributed ESS,Direct Recycling,Direct Recycling
+BWMR-Heavy,Home/Distributed ESS,Component Reuse,Direct Recycling,Direct Recycling
+EU-Heavy,Grid-scale ESS,Home/Distributed ESS,Direct Recycling,Direct Recycling

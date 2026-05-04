@@ -1,0 +1,8 @@
+{
+  "n_overlap": 500,
+  "rmse_pct": 9.639,
+  "pearson_r": 0.9335,
+  "rmse_gate": 5.0,
+  "pearson_r_gate": 0.9,
+  "passed": false
+}

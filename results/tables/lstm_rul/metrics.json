@@ -1,0 +1,46 @@
+{
+  "smoke": false,
+  "epochs_trained": 18,
+  "train_time_s": 3628.42,
+  "best_epoch": 10,
+  "n_features": 37,
+  "seq_len": 60,
+  "target_range_cycles": 3693.0,
+  "train": {
+    "r2": 0.9735346436500549,
+    "rmse_cycles": 68.85335271203212,
+    "mae_cycles": 24.846525192260742,
+    "rmse_pct_of_range": 1.864428722232118,
+    "mae_pct_of_range": 0.6728005738494649
+  },
+  "val": {
+    "r2": 0.9267047643661499,
+    "rmse_cycles": 115.96952472120638,
+    "mae_cycles": 41.615596771240234,
+    "rmse_pct_of_range": 3.14025249718945,
+    "mae_pct_of_range": 1.126877789635533
+  },
+  "test": {
+    "r2": 0.8765769600868225,
+    "rmse_cycles": 178.42421141411836,
+    "mae_cycles": 68.50312042236328,
+    "rmse_pct_of_range": 4.831416501871605,
+    "mae_pct_of_range": 1.8549450425768559
+  },
+  "gates": {
+    "rmse_pct_of_range < 2%": false
+  },
+  "config": {
+    "input_size": null,
+    "hidden_size": 64,
+    "num_layers": 2,
+    "dropout": 0.35,
+    "weight_decay": 0.0001,
+    "learning_rate": 0.001,
+    "batch_size": 64,
+    "epochs": 200,
+    "patience": 8,
+    "sequence_length": 60,
+    "scheduler": "cosine"
+  }
+}

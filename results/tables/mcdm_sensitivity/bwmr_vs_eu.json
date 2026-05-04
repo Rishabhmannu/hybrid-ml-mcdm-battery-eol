@@ -1,0 +1,31 @@
+{
+  "mean_spearman_rho": 0.45,
+  "h2_falsification_threshold": 0.2,
+  "h2_rejected": false,
+  "per_grade": {
+    "A": {
+      "spearman_rho": -0.19999999999999998,
+      "bwmr_recommended": "Home/Distributed ESS",
+      "eu_recommended": "Grid-scale ESS",
+      "agree": false
+    },
+    "B": {
+      "spearman_rho": 0.0,
+      "bwmr_recommended": "Component Reuse",
+      "eu_recommended": "Home/Distributed ESS",
+      "agree": false
+    },
+    "C": {
+      "spearman_rho": 1.0,
+      "bwmr_recommended": "Direct Recycling",
+      "eu_recommended": "Direct Recycling",
+      "agree": true
+    },
+    "D": {
+      "spearman_rho": 1.0,
+      "bwmr_recommended": "Direct Recycling",
+      "eu_recommended": "Direct Recycling",
+      "agree": true
+    }
+  }
+}

@@ -1,0 +1,2 @@
+held_out_source,n_train,n_test,dominant_chemistry,dominant_chem_pct,r2,rmse,mae,mape,fit_time_s
+BL_ISU_ILCC,13797,16203,NMC,100.0,0.6189563274383545,14.0574828289537,12.01786994934082,56046200.0,0.1

@@ -1,0 +1,28 @@
+{
+  "smoke": false,
+  "xgb_model": "/Users/rishabh/Documents/Eco-Sem8/eco-sem8-group-project/models/xgboost_soh/xgboost_soh.json",
+  "val": {
+    "accuracy": 0.9887459673969737,
+    "f1_macro": 0.9742978200296395,
+    "f1_per_class": {
+      "A": 0.9904498995970984,
+      "B": 0.9458276381127048,
+      "C": 0.9633821702522036,
+      "D": 0.997531572156551
+    }
+  },
+  "test": {
+    "accuracy": 0.9840096520412538,
+    "f1_macro": 0.9703318713263751,
+    "f1_per_class": {
+      "A": 0.9897851209371693,
+      "B": 0.9290911471484952,
+      "C": 0.9667498273358986,
+      "D": 0.9957013898839375
+    }
+  },
+  "gates": {
+    "accuracy \u2265 0.90": true,
+    "f1_macro \u2265 0.85": true
+  }
+}

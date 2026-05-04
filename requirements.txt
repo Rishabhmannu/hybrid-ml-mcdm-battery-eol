@@ -1,0 +1,41 @@
+# Core ML/DL
+xgboost>=3.0
+lightgbm>=4.0
+scikit-learn>=1.6
+torch>=2.0
+pytorch-lightning>=2.0
+torchmetrics>=1.0
+
+# Explainability
+shap>=0.48
+
+# Hyperparameter tuning
+optuna>=4.0
+
+# Data
+pandas>=2.0
+numpy>=2.0
+datasets>=4.0
+huggingface-hub>=0.30
+
+# MCDM (to install)
+pyDecision>=4.0
+
+# Visualization
+matplotlib>=3.10
+seaborn>=0.13
+plotly>=6.0
+
+# Statistical
+scipy>=1.15
+statsmodels>=0.14
+
+# Imbalanced data
+imbalanced-learn>=0.14
+
+# Notebook
+jupyterlab>=4.0
+
+# Optional
+# lime
+# umap-learn

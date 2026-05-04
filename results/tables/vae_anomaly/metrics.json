@@ -1,0 +1,27 @@
+{
+  "smoke": false,
+  "epochs_trained": 31,
+  "train_time_s": 5210.71,
+  "best_epoch": 21,
+  "n_features": 37,
+  "anomaly_threshold": 0.6233636736869812,
+  "train_anomaly_rate": 0.05,
+  "val_anomaly_rate": 0.04147268316779768,
+  "test_anomaly_rate": 0.052710648155841915,
+  "train_recon_err_mean": 0.3863012492656708,
+  "val_recon_err_mean": 0.4983842372894287,
+  "test_recon_err_mean": 0.24642781913280487,
+  "config": {
+    "latent_dim": 12,
+    "hidden_dims": [
+      128,
+      64,
+      32
+    ],
+    "learning_rate": 0.001,
+    "batch_size": 64,
+    "epochs": 100,
+    "beta": 1.0,
+    "anomaly_percentile": 95
+  }
+}

@@ -1,0 +1,81 @@
+scenario,grade,alternative,closeness,rank
+Equal Weights,A,Grid-scale ESS,0.795678751911834,1
+Equal Weights,A,Home/Distributed ESS,0.7506319749669003,2
+Equal Weights,A,Component Reuse,0.37649991312319153,3
+Equal Weights,A,Direct Recycling,0.2830650675013861,4
+Equal Weights,B,Grid-scale ESS,0.5849876378483678,2
+Equal Weights,B,Home/Distributed ESS,0.7569390026668759,1
+Equal Weights,B,Component Reuse,0.45850992580996697,3
+Equal Weights,B,Direct Recycling,0.3374126789599633,4
+Equal Weights,C,Grid-scale ESS,0.0,4
+Equal Weights,C,Home/Distributed ESS,0.2629351046231987,3
+Equal Weights,C,Component Reuse,0.6669594917088951,2
+Equal Weights,C,Direct Recycling,0.7767693879729687,1
+Equal Weights,D,Grid-scale ESS,0.0,4
+Equal Weights,D,Home/Distributed ESS,0.12816651084137537,3
+Equal Weights,D,Component Reuse,0.369760187668229,2
+Equal Weights,D,Direct Recycling,0.9999999995624214,1
+Literature Mean,A,Grid-scale ESS,0.7817478982201935,1
+Literature Mean,A,Home/Distributed ESS,0.6913598895517354,2
+Literature Mean,A,Component Reuse,0.2552787315813955,4
+Literature Mean,A,Direct Recycling,0.30519477939537,3
+Literature Mean,B,Grid-scale ESS,0.5322764344421985,2
+Literature Mean,B,Home/Distributed ESS,0.7312270111483928,1
+Literature Mean,B,Component Reuse,0.33243030486048886,4
+Literature Mean,B,Direct Recycling,0.3783332155548153,3
+Literature Mean,C,Grid-scale ESS,0.0,4
+Literature Mean,C,Home/Distributed ESS,0.23908849041440686,3
+Literature Mean,C,Component Reuse,0.6887405995782377,2
+Literature Mean,C,Direct Recycling,0.8508032800792139,1
+Literature Mean,D,Grid-scale ESS,0.0,4
+Literature Mean,D,Home/Distributed ESS,0.12758094695038266,3
+Literature Mean,D,Component Reuse,0.3463521002105115,2
+Literature Mean,D,Direct Recycling,0.9999999996777446,1
+Technical-Heavy,A,Grid-scale ESS,0.8713545117011373,1
+Technical-Heavy,A,Home/Distributed ESS,0.810331582864825,2
+Technical-Heavy,A,Component Reuse,0.40482844385608835,3
+Technical-Heavy,A,Direct Recycling,0.18516210473283867,4
+Technical-Heavy,B,Grid-scale ESS,0.6589081201369593,2
+Technical-Heavy,B,Home/Distributed ESS,0.8462368924601884,1
+Technical-Heavy,B,Component Reuse,0.5252475846213367,3
+Technical-Heavy,B,Direct Recycling,0.22547985471684587,4
+Technical-Heavy,C,Grid-scale ESS,0.0,4
+Technical-Heavy,C,Home/Distributed ESS,0.28770288884445133,3
+Technical-Heavy,C,Component Reuse,0.7790885528232765,2
+Technical-Heavy,C,Direct Recycling,0.8494003246886956,1
+Technical-Heavy,D,Grid-scale ESS,0.0,4
+Technical-Heavy,D,Home/Distributed ESS,0.13316724253433004,3
+Technical-Heavy,D,Component Reuse,0.37739709334302307,2
+Technical-Heavy,D,Direct Recycling,0.9999999996671506,1
+BWMR-Heavy,A,Grid-scale ESS,0.5365624265171492,4
+BWMR-Heavy,A,Home/Distributed ESS,0.495484641142374,1
+BWMR-Heavy,A,Component Reuse,0.19617503646309423,2
+BWMR-Heavy,A,Direct Recycling,0.6053894393719454,3
+BWMR-Heavy,B,Grid-scale ESS,0.3607511439823564,4
+BWMR-Heavy,B,Home/Distributed ESS,0.50969697345945,2
+BWMR-Heavy,B,Component Reuse,0.22482572719332017,1
+BWMR-Heavy,B,Direct Recycling,0.6533620151837722,3
+BWMR-Heavy,C,Grid-scale ESS,0.0,4
+BWMR-Heavy,C,Home/Distributed ESS,0.14450821411902548,3
+BWMR-Heavy,C,Component Reuse,0.4936947398171663,2
+BWMR-Heavy,C,Direct Recycling,0.8974912666318801,1
+BWMR-Heavy,D,Grid-scale ESS,0.0,4
+BWMR-Heavy,D,Home/Distributed ESS,0.08867007675715835,3
+BWMR-Heavy,D,Component Reuse,0.3186651480543036,2
+BWMR-Heavy,D,Direct Recycling,0.9999999996411042,1
+EU-Heavy,A,Grid-scale ESS,0.7645523298983005,1
+EU-Heavy,A,Home/Distributed ESS,0.714322495641061,2
+EU-Heavy,A,Component Reuse,0.4071925667049033,3
+EU-Heavy,A,Direct Recycling,0.31468854746608077,4
+EU-Heavy,B,Grid-scale ESS,0.6284391684202011,2
+EU-Heavy,B,Home/Distributed ESS,0.7741007579832595,1
+EU-Heavy,B,Component Reuse,0.3757322517224151,3
+EU-Heavy,B,Direct Recycling,0.33033189489100945,4
+EU-Heavy,C,Grid-scale ESS,0.0,4
+EU-Heavy,C,Home/Distributed ESS,0.22352135556448485,3
+EU-Heavy,C,Component Reuse,0.640303934492775,2
+EU-Heavy,C,Direct Recycling,0.6513549199974769,1
+EU-Heavy,D,Grid-scale ESS,0.0,4
+EU-Heavy,D,Home/Distributed ESS,0.11102289004170163,3
+EU-Heavy,D,Component Reuse,0.353597459453552,2
+EU-Heavy,D,Direct Recycling,0.9999999995528123,1

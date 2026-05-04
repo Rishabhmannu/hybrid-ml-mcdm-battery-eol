@@ -1,0 +1,59 @@
+# =====================================================================
+# .gitignore — Hybrid ML-MCDM Framework for EV Battery EoL Routing
+# =====================================================================
+
+# ---------- Datasets (all data, raw + processed + regulatory) ----------
+# Leading slash anchors to project root so `src/data/` (Python source)
+# is NOT excluded by these rules.
+/data/
+/manually-downloaded-data/
+/research-papers/
+/freshly-downloaded-papers/
+
+# ---------- Secrets / env ----------
+.env
+*.env
+.venv/
+venv/
+
+# ---------- All Markdown documents (shared via Drive, not git) ----------
+*.md
+
+# ---------- Trained model artifacts (regenerable from scripts) ----------
+# Anchored to root so `src/models/` (Python source) is NOT excluded.
+/models/
+
+# ---------- Run-time outputs ----------
+# figures + DPP JSONs are regenerable; keep results/tables/ in-repo for
+# reproducibility evidence (small JSON / CSV metric files).
+/results/figures/
+/results/dpp_output/
+
+# ---------- Claude Code internal state (agent worktrees, settings) ----------
+.claude/
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.egg
+*.so
+
+# ---------- Jupyter ----------
+.ipynb_checkpoints/
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ---------- IDE ----------
+.vscode/
+.idea/
+.history/
+
+# ---------- Logs / scratch ----------
+*.log
+nohup.out
