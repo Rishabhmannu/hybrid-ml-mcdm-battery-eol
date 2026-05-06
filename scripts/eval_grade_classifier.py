@@ -41,8 +41,16 @@ TBL_DIR = RESULTS_DIR / "tables" / "grade_classifier"
 def main():
     p = argparse.ArgumentParser(description="Evaluate SoH→Grade classifier")
     p.add_argument("--smoke", action="store_true", help="Use the smoke feature bundle")
-    p.add_argument("--xgb-model", default=str(MODELS_DIR / "xgboost_soh" / "xgboost_soh.json"))
+    p.add_argument("--xgb-model", default=None,
+                   help="Path to XGBoost SoH model. Auto-resolved from --exclude-capacity "
+                        "if not provided.")
+    p.add_argument("--exclude-capacity", action="store_true",
+                   help="Iter-3 audited mode: load the audited (capacity-excluded) model "
+                        "and a matching feature bundle.")
     args = p.parse_args()
+    suffix = "_audited" if args.exclude_capacity else ""
+    if args.xgb_model is None:
+        args.xgb_model = str(MODELS_DIR / "xgboost_soh" / f"xgboost_soh{suffix}.json")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -56,7 +64,8 @@ def main():
     print(f"Grade classifier evaluation  ({'SMOKE' if args.smoke else 'FULL'})")
     print("=" * 70)
 
-    bundle = load_feature_bundle(smoke=args.smoke)
+    bundle = load_feature_bundle(smoke=args.smoke,
+                                 exclude_capacity_features=args.exclude_capacity)
     model = xgb.XGBRegressor()
     model.load_model(str(xgb_path))
 
@@ -104,8 +113,8 @@ def main():
                   f"acc={r['accuracy']:.4f}  F1macro={r['f1_macro']:.4f}")
         else:
             print(f"  {r['stratum']:10s}  n={r['n']:>7,d}  (below min_n)")
-    pd.DataFrame(per_source).to_csv(TBL_DIR / "test_grade_metrics_per_source.csv", index=False)
-    pd.DataFrame(per_chem).to_csv(TBL_DIR / "test_grade_metrics_per_chemistry.csv", index=False)
+    pd.DataFrame(per_source).to_csv(TBL_DIR / f"test_grade_metrics_per_source{suffix}.csv", index=False)
+    pd.DataFrame(per_chem).to_csv(TBL_DIR / f"test_grade_metrics_per_chemistry{suffix}.csv", index=False)
 
     gates = {
         "accuracy ≥ 0.90": test_metrics["accuracy"] >= TARGETS["grade_accuracy"],
@@ -113,14 +122,15 @@ def main():
     }
     print("\n[Gates] " + " | ".join(f"{k}: {'PASS' if v else 'FAIL'}" for k, v in gates.items()))
 
+    title_tag = " (audited)" if args.exclude_capacity else ""
     plot_confusion_matrix(
         grade_true_test, grade_pred_test, labels=labels,
-        out_path=FIG_DIR / "confusion_matrix_test.png",
-        title="Grade classifier — Test confusion matrix")
+        out_path=FIG_DIR / f"confusion_matrix_test{suffix}.png",
+        title=f"Grade classifier{title_tag} — Test confusion matrix")
     plot_confusion_matrix(
         grade_true_test, grade_pred_test, labels=labels,
-        out_path=FIG_DIR / "confusion_matrix_test_normalized.png",
-        title="Grade classifier — Test (row-normalized)",
+        out_path=FIG_DIR / f"confusion_matrix_test_normalized{suffix}.png",
+        title=f"Grade classifier{title_tag} — Test (row-normalized)",
         normalize=True)
 
     metrics = {
@@ -130,7 +140,7 @@ def main():
         "test": test_metrics,
         "gates": gates,
     }
-    with open(TBL_DIR / "metrics.json", "w") as f:
+    with open(TBL_DIR / f"metrics{suffix}.json", "w") as f:
         json.dump(metrics, f, indent=2)
 
     # Per-grade SoH prediction quality
@@ -140,9 +150,9 @@ def main():
         "grade_true": grade_true_test,
         "grade_pred": grade_pred_test,
     })
-    df.to_csv(TBL_DIR / "test_predictions.csv", index=False)
-    print(f"\n[Save] metrics → {(TBL_DIR / 'metrics.json').relative_to(PROJECT_ROOT)}")
-    print(f"[Save] preds   → {(TBL_DIR / 'test_predictions.csv').relative_to(PROJECT_ROOT)}")
+    df.to_csv(TBL_DIR / f"test_predictions{suffix}.csv", index=False)
+    print(f"\n[Save] metrics → {(TBL_DIR / f'metrics{suffix}.json').relative_to(PROJECT_ROOT)}")
+    print(f"[Save] preds   → {(TBL_DIR / f'test_predictions{suffix}.csv').relative_to(PROJECT_ROOT)}")
     print(f"[Save] figures → {FIG_DIR.relative_to(PROJECT_ROOT)}/")
     print("\nDone.")
 

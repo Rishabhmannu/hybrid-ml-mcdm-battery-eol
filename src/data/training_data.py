@@ -34,6 +34,18 @@ EOL_THRESHOLD = 0.80
 # for the IR-availability ablation study).
 HIGH_MISSING_FEATURES = ["ir_ohm", "t_min", "t_max", "t_mean", "t_range"]
 
+# Iteration-3 capacity-leakage audit: SoH is defined as
+# `capacity_Ah / nominal_Ah`, so any feature that *is* capacity_Ah or is
+# derived from it (Δ, rolling mean/std) makes the SoH regression nearly
+# tautological. `nominal_Ah` is a static nameplate spec and does NOT leak.
+# Pass `exclude_capacity_features=True` to drop these for the leakage audit.
+CAPACITY_LEAK_FEATURES = [
+    "capacity_Ah",
+    "capacity_delta",
+    "capacity_roll5_mean", "capacity_roll5_std",
+    "capacity_roll20_mean", "capacity_roll20_std",
+]
+
 # Iteration-2 dQ/dV peak features (Severson 2019 / Greenbank & Howey 2022).
 # Available for ~85 % of the corpus (BatteryLife + NASA Rand & Recomm + the
 # discharge-side of synthetic), NaN for the rest. Median-imputed at training
@@ -163,6 +175,7 @@ def load_feature_bundle(
     use_categoricals: bool = True,
     include_source_onehot: bool = False,
     include_high_missing: bool = False,
+    exclude_capacity_features: bool = False,
     verbose: bool = True,
 ) -> FeatureBundle:
     """
@@ -181,14 +194,24 @@ def load_feature_bundle(
     include_high_missing : include `ir_ohm` and the 4 temperature columns
         (default: False; per Stage-EDA finding they are 87–93 % missing and
         median-imputing them manufactures a fake signal in most rows).
+    exclude_capacity_features : drop `capacity_Ah` and its 5 derived columns
+        (Δ, rolling mean/std). Use for the leakage audit — SoH is defined
+        as `capacity_Ah / nominal_Ah`, so these features make the regression
+        nearly tautological.
     """
     numeric_features = (NUMERIC_FEATURES_FULL if include_high_missing
                         else NUMERIC_FEATURES)
+    if exclude_capacity_features:
+        numeric_features = [c for c in numeric_features
+                            if c not in CAPACITY_LEAK_FEATURES]
     if verbose:
         print(f"Loading {UNIFIED_PARQUET.relative_to(PROJECT_ROOT)} ...")
         if not include_high_missing:
             print(f"  feature set: {len(numeric_features)} numeric features "
                   f"(excluded high-missing: {HIGH_MISSING_FEATURES})")
+        if exclude_capacity_features:
+            print(f"  LEAKAGE AUDIT: dropped capacity-derived features "
+                  f"{CAPACITY_LEAK_FEATURES}")
     df = pd.read_parquet(UNIFIED_PARQUET)
     splits = json.loads(SPLITS_JSON.read_text())
     df = _build_feature_frame(df, numeric_features)
@@ -283,6 +306,7 @@ def load_battery_sequences(
     max_batteries_per_split: int | None = None,
     include_source_onehot: bool = False,
     include_high_missing: bool = False,
+    exclude_capacity_features: bool = False,
     verbose: bool = True,
 ):
     """
@@ -292,13 +316,18 @@ def load_battery_sequences(
     (X_sequences, y_rul_targets, battery_ids) where X has shape
     (n_windows, sequence_length, n_features).
 
-    See `load_feature_bundle` for `include_source_onehot` and
-    `include_high_missing` semantics.
+    See `load_feature_bundle` for `include_source_onehot`,
+    `include_high_missing`, and `exclude_capacity_features` semantics.
     """
     numeric_features = (NUMERIC_FEATURES_FULL if include_high_missing
                         else NUMERIC_FEATURES)
+    if exclude_capacity_features:
+        numeric_features = [c for c in numeric_features
+                            if c not in CAPACITY_LEAK_FEATURES]
     if verbose:
         print(f"Loading sequences from {UNIFIED_PARQUET.relative_to(PROJECT_ROOT)} ...")
+        if exclude_capacity_features:
+            print(f"  LEAKAGE AUDIT: dropped {CAPACITY_LEAK_FEATURES}")
     df = pd.read_parquet(UNIFIED_PARQUET)
     splits = json.loads(SPLITS_JSON.read_text())
     df = _build_feature_frame(df, numeric_features)

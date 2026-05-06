@@ -1,0 +1,3 @@
+held_out_cluster,n_held_batteries,n_train,n_test_cycles,test_r2,test_rmse,test_mae,grade_acc_overall,grade_A_acc,grade_A_n,fit_time_s
+SYN_IN_LFP_Rajasthan_extreme,4,1807641,400,-12269828.0,0.4070815232873435,0.3486190140247345,1.0,1.0,400,5.3
+SYN_IN_NMC_Rajasthan_extreme,12,1806881,1200,0.0334399938583374,0.3143782911640297,0.2641802132129669,1.0,1.0,1200,5.3

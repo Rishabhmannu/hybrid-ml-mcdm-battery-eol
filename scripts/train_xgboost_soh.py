@@ -83,7 +83,7 @@ def _run_optuna(X_train, y_train, X_val, y_val, n_trials: int) -> dict:
     return study.best_params
 
 
-def _maybe_run_shap(model, X_test, feature_names, n_samples: int):
+def _maybe_run_shap(model, X_test, feature_names, n_samples: int, suffix: str = ""):
     """SHAP is slow on full test set — sample down for plots."""
     try:
         import shap
@@ -100,19 +100,19 @@ def _maybe_run_shap(model, X_test, feature_names, n_samples: int):
     plt.figure()
     shap.summary_plot(shap_values, X_sample, plot_type="bar", show=False, max_display=15)
     plt.tight_layout()
-    plt.savefig(FIG_DIR / "shap_summary_bar.png", dpi=300, bbox_inches="tight")
+    plt.savefig(FIG_DIR / f"shap_summary_bar{suffix}.png", dpi=300, bbox_inches="tight")
     plt.close()
 
     plt.figure()
     shap.summary_plot(shap_values, X_sample, show=False, max_display=15)
     plt.tight_layout()
-    plt.savefig(FIG_DIR / "shap_beeswarm.png", dpi=300, bbox_inches="tight")
+    plt.savefig(FIG_DIR / f"shap_beeswarm{suffix}.png", dpi=300, bbox_inches="tight")
     plt.close()
 
     mean_abs = np.abs(shap_values).mean(axis=0)
     top = (pd.DataFrame({"feature": feature_names, "mean_abs_shap": mean_abs})
            .sort_values("mean_abs_shap", ascending=False))
-    top.to_csv(TBL_DIR / "shap_top_features.csv", index=False)
+    top.to_csv(TBL_DIR / f"shap_top_features{suffix}.csv", index=False)
     print(f"[SHAP] top 5 by mean |SHAP|:")
     print(top.head().to_string(index=False))
 
@@ -125,6 +125,10 @@ def main():
     p.add_argument("--shap-samples", type=int, default=2000, help="SHAP sample size")
     p.add_argument("--include-high-missing", action="store_true",
                    help="Include ir_ohm + temperature features (87-93%% missing — for ablation only)")
+    p.add_argument("--exclude-capacity", action="store_true",
+                   help="Iter-3 audited mode: drop capacity_Ah and 5 capacity-derived "
+                        "rolling/Δ features. Realistic deployment scenario where capacity "
+                        "is the *target* of estimation, not an input.")
     args = p.parse_args()
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -135,7 +139,9 @@ def main():
     print(f"XGBoost SoH training  ({'SMOKE' if args.smoke else 'FULL'})")
     print("=" * 70)
     bundle = load_feature_bundle(smoke=args.smoke,
-                                 include_high_missing=args.include_high_missing)
+                                 include_high_missing=args.include_high_missing,
+                                 exclude_capacity_features=args.exclude_capacity)
+    suffix = "_audited" if args.exclude_capacity else ""
 
     X_tr, y_tr = bundle.X_train, bundle.y_train_soh
     X_va, y_va = bundle.X_val, bundle.y_val_soh
@@ -170,7 +176,7 @@ def main():
         "train_rmse": rmse_train,
         "val_rmse": rmse_val,
     })
-    history.to_csv(TBL_DIR / "training_log.csv", index=False)
+    history.to_csv(TBL_DIR / f"training_log{suffix}.csv", index=False)
     print(f"\n[Train] {len(rmse_train)} boosting rounds  ·  best_iter={model.best_iteration}  ·  {train_time:.1f}s")
 
     pred_tr = model.predict(X_tr)
@@ -202,8 +208,8 @@ def main():
                   f"R²={r['r2']:.4f}  RMSE={r['rmse']:.3f}%  MAE={r['mae']:.3f}%")
         else:
             print(f"  {r['stratum']:10s}  n={r['n']:>7,d}  (below min_n)")
-    pd.DataFrame(per_source).to_csv(TBL_DIR / "test_metrics_per_source.csv", index=False)
-    pd.DataFrame(per_chem).to_csv(TBL_DIR / "test_metrics_per_chemistry.csv", index=False)
+    pd.DataFrame(per_source).to_csv(TBL_DIR / f"test_metrics_per_source{suffix}.csv", index=False)
+    pd.DataFrame(per_chem).to_csv(TBL_DIR / f"test_metrics_per_chemistry{suffix}.csv", index=False)
 
     targets_check = {
         "r2 > 0.95": test_metrics["r2"] > TARGETS["soh_r2"],
@@ -228,42 +234,45 @@ def main():
         "test": test_metrics,
         "gates": targets_check,
     }
-    with open(TBL_DIR / "metrics.json", "w") as f:
+    metrics_path = TBL_DIR / f"metrics{suffix}.json"
+    with open(metrics_path, "w") as f:
         json.dump(metrics_payload, f, indent=2)
-    print(f"\n[Save] metrics → {(TBL_DIR / 'metrics.json').relative_to(PROJECT_ROOT)}")
+    print(f"\n[Save] metrics → {metrics_path.relative_to(PROJECT_ROOT)}")
 
-    model.save_model(str(OUT_DIR / "xgboost_soh.json"))
-    joblib.dump(bundle.scaler, OUT_DIR / "feature_scaler.pkl")
-    with open(OUT_DIR / "feature_names.json", "w") as f:
+    model_path = OUT_DIR / f"xgboost_soh{suffix}.json"
+    model.save_model(str(model_path))
+    joblib.dump(bundle.scaler, OUT_DIR / f"feature_scaler{suffix}.pkl")
+    with open(OUT_DIR / f"feature_names{suffix}.json", "w") as f:
         json.dump(bundle.feature_names, f, indent=2)
-    print(f"[Save] model  → {(OUT_DIR / 'xgboost_soh.json').relative_to(PROJECT_ROOT)}")
+    print(f"[Save] model  → {model_path.relative_to(PROJECT_ROOT)}")
 
-    plot_loss_curves(history, out_path=FIG_DIR / "loss_rmse.png",
-                     title="XGBoost SoH — RMSE per boosting round",
+    title_tag = " (audited)" if args.exclude_capacity else ""
+    plot_loss_curves(history, out_path=FIG_DIR / f"loss_rmse{suffix}.png",
+                     title=f"XGBoost SoH{title_tag} — RMSE per boosting round",
                      metric_name="rmse")
     plot_overfit_check(history.rename(columns={"train_rmse": "train_loss",
                                                 "val_rmse": "val_loss"}),
-                       out_path=FIG_DIR / "overfit_check.png",
-                       title="XGBoost SoH — overfit/underfit diagnostic")
+                       out_path=FIG_DIR / f"overfit_check{suffix}.png",
+                       title=f"XGBoost SoH{title_tag} — overfit/underfit diagnostic")
     metric_text = (f"R²={test_metrics['r2']:.3f}\n"
                    f"RMSE={test_metrics['rmse']:.2f}%\n"
                    f"MAE={test_metrics['mae']:.2f}%")
     plot_predicted_vs_actual(y_te, pred_te,
-                             out_path=FIG_DIR / "predicted_vs_actual_test.png",
-                             title="XGBoost SoH — Test set",
+                             out_path=FIG_DIR / f"predicted_vs_actual_test{suffix}.png",
+                             title=f"XGBoost SoH{title_tag} — Test set",
                              units="(SoH %)", metric_text=metric_text)
     plot_residuals(y_te, pred_te,
-                   out_path=FIG_DIR / "residuals_test.png",
-                   title="XGBoost SoH — Test residuals",
+                   out_path=FIG_DIR / f"residuals_test{suffix}.png",
+                   title=f"XGBoost SoH{title_tag} — Test residuals",
                    units="(SoH %)")
     plot_feature_importance(bundle.feature_names,
                             model.feature_importances_,
-                            out_path=FIG_DIR / "feature_importance.png",
-                            title="XGBoost SoH — Built-in feature importance")
+                            out_path=FIG_DIR / f"feature_importance{suffix}.png",
+                            title=f"XGBoost SoH{title_tag} — Built-in feature importance")
     print(f"[Save] figures → {FIG_DIR.relative_to(PROJECT_ROOT)}/")
 
     if not args.smoke:
-        _maybe_run_shap(model, X_te, bundle.feature_names, args.shap_samples)
+        _maybe_run_shap(model, X_te, bundle.feature_names, args.shap_samples, suffix=suffix)
 
     print("\nDone.")
 
