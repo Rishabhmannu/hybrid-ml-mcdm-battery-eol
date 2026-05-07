@@ -320,6 +320,7 @@ def run_pybamm_simulation(
     progress_every_k_cycles: int = 0,
     progress_label: str = "",
     chunk_cycles: int = 100,
+    plating_mode: str = "partially_reversible",
 ) -> pd.DataFrame:
     """Run PyBaMM simulation for one virtual cell.
 
@@ -377,10 +378,23 @@ def run_pybamm_simulation(
     use_degradation = include_degradation and chem_supports_degradation
 
     if use_degradation:
+        # Iter-3 ablation: `plating_mode` configures PyBaMM's lithium-plating
+        # submodel. Default "partially_reversible" matches Iter-1/Iter-2/Iter-3
+        # canonical cells and lets plated lithium re-intercalate during rest
+        # phases (causing mid-run SoH-min recovery to higher SoH-end).
+        # "irreversible" disables the back-reaction so SoH-end ≈ SoH-min —
+        # used for the irreversible-plating ablation cohort that bounds
+        # end-state SoH without further multiplier-fudging.
+        valid_plating = {"partially_reversible", "irreversible", "reversible", "none"}
+        if plating_mode not in valid_plating:
+            raise ValueError(
+                f"plating_mode={plating_mode!r} not in {sorted(valid_plating)}"
+            )
+        plating_pybamm = plating_mode.replace("_", " ")
         model = pybamm.lithium_ion.DFN(
             options={
                 "SEI": "solvent-diffusion limited",
-                "lithium plating": "partially reversible",
+                "lithium plating": plating_pybamm,
                 "particle mechanics": ("swelling and cracking", "swelling only"),
                 "SEI on cracks": "true",
                 "loss of active material": "stress-driven",

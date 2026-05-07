@@ -83,11 +83,16 @@ class CellPlan:
     output_dir: str  # str so it pickles cleanly
     heartbeat_every_k: int = 50
     chunk_cycles: int = 100
+    plating_mode: str = "partially_reversible"
+    # Iter-3 ablation: prefix lets us write distinct battery_ids when extending
+    # an existing canonical corpus (e.g., IN_SYNTH_IRREV_0000_NMC_... avoids
+    # colliding with IN_SYNTH_0000_NMC_... in the canonical cohort).
+    battery_id_prefix: str = "IN_SYNTH"
 
     @property
     def battery_id(self) -> str:
         return (
-            f"IN_SYNTH_{self.cell_idx:04d}_{self.chemistry}_"
+            f"{self.battery_id_prefix}_{self.cell_idx:04d}_{self.chemistry}_"
             f"{self.ambient_profile_name}_{self.usage_protocol}"
         )
 
@@ -105,6 +110,8 @@ def _plan_corpus(
     heartbeat_every_k: int = 50,
     chunk_cycles: int = 100,
     randomize_after_cell: int = 0,
+    plating_mode: str = "partially_reversible",
+    battery_id_prefix: str = "IN_SYNTH",
 ) -> list[CellPlan]:
     """Round-robin assign cells to (chemistry × climate) combinations.
 
@@ -162,6 +169,8 @@ def _plan_corpus(
             output_dir=str(output_dir),
             heartbeat_every_k=heartbeat_every_k,
             chunk_cycles=chunk_cycles,
+            plating_mode=plating_mode,
+            battery_id_prefix=battery_id_prefix,
         ))
     return plans
 
@@ -343,6 +352,7 @@ def _run_one_cell(plan: CellPlan) -> dict:
             progress_every_k_cycles=plan.heartbeat_every_k,
             progress_label=plan.battery_id,
             chunk_cycles=plan.chunk_cycles,
+            plating_mode=plan.plating_mode,
         )
     except Exception as exc:
         rss_end_gb = proc.memory_info().rss / 1e9
@@ -374,6 +384,7 @@ def _run_one_cell(plan: CellPlan) -> dict:
     df["ambient_K_mean"] = plan.ambient_mean_K
     df["ambient_K_amplitude"] = plan.ambient_amplitude_K
     df["usage_protocol"] = plan.usage_protocol
+    df["plating_mode"] = plan.plating_mode
     df["source"] = "synthetic_pybamm_indian_iter3"
 
     out_dir = Path(plan.output_dir)
@@ -459,6 +470,22 @@ def main():
                         "PyBaMM is deterministic — without this flag, all "
                         "cells in the same (chemistry, climate, protocol) "
                         "cluster produce bit-identical trajectories.")
+    p.add_argument("--plating-mode", type=str, default="partially_reversible",
+                   choices=["partially_reversible", "irreversible",
+                            "reversible", "none"],
+                   help="PyBaMM lithium-plating submodel. Default "
+                        "'partially_reversible' matches the canonical Iter-3 "
+                        "corpus. 'irreversible' disables back-reaction so "
+                        "SoH-end ≈ SoH-min — used for the irreversible-plating "
+                        "ablation cohort that bounds end-state SoH without "
+                        "further calibration-multiplier fudging.")
+    p.add_argument("--battery-id-prefix", type=str, default="IN_SYNTH",
+                   help="Battery-ID prefix written into each per-cell CSV. "
+                        "Default IN_SYNTH (matches the canonical corpus). For "
+                        "the irreversible-plating ablation cohort use e.g. "
+                        "IN_SYNTH_IRREV so battery_ids are globally distinct "
+                        "from the canonical corpus when both are merged "
+                        "downstream.")
     p.add_argument("--output-dir", type=str,
                    default=str(PROCESSED_DIR / "synthetic_indian_iter3"))
     p.add_argument("--chemistries", type=str, nargs="+", default=["NMC"],
@@ -505,6 +532,8 @@ def main():
           f"~{args.n_workers * mem_diag['est_per_worker_gb']:.1f} GB est for workers)")
     print(f"  protocol       : {args.usage_protocol}")
     print(f"  diurnal        : {not args.no_diurnal}")
+    print(f"  plating_mode   : {args.plating_mode}")
+    print(f"  bid_prefix     : {args.battery_id_prefix}")
     print(f"  calibration    : {calibration_multipliers if calibration_multipliers else 'OFF (stock OKane2022)'}")
     n_random = max(0, args.n_cells - args.randomize_after_cell)
     n_canonical = min(args.n_cells, args.randomize_after_cell)
@@ -526,6 +555,8 @@ def main():
         heartbeat_every_k=args.heartbeat_every,
         chunk_cycles=args.chunk_cycles,
         randomize_after_cell=args.randomize_after_cell,
+        plating_mode=args.plating_mode,
+        battery_id_prefix=args.battery_id_prefix,
     )
 
     # Print the planned corpus so the user can sanity-check before a long run
@@ -644,6 +675,8 @@ def main():
         "ambient_profiles": args.ambient_profiles,
         "diurnal_profiles": DIURNAL_CLIMATE_PROFILES if not args.no_diurnal else None,
         "calibration_multipliers": calibration_multipliers,
+        "plating_mode": args.plating_mode,
+        "battery_id_prefix": args.battery_id_prefix,
         "calibration_methodology": (
             "Empirical 10× multiplier on (SEI rate, SEI diffusivity, Li plating "
             "rate, +/- electrode LAM proportional terms). Cite OKane et al. 2022 "

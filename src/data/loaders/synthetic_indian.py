@@ -1,18 +1,38 @@
-"""Loader for PyBaMM-generated synthetic Indian-context cycling data.
+"""Loader for synthetic Indian-context cycling data.
 
-Reads `data/processed/synthetic_indian/synthetic_indian_combined.csv` and maps
-the columns into the unified per-cycle schema used by the rest of the pipeline.
+Iter-3 (May 2026) ships THREE distinct synthetic cohorts that this loader
+folds into the unified per-cycle schema with **cohort-distinct source codes**
+so downstream stratification can analyze each cohort separately:
 
-The synthetic.py output uses different column names than the unified schema:
-  voltage_* → v_*
-  temperature_* → t_*
-  capacity → capacity_Ah
-  ambient_profile, ambient_K, driving_cycle → encoded into source for
-    downstream stratification
+  Source dir                                        Cohort                                Source code prefix
+  -----------------------------------------------   -----------------------------------   --------------------------
+  data/processed/synthetic_indian_iter3/            PyBaMM NMC, partially_reversible      SYN_IN_PYBAMM_NMC
+                                                    plating (60 cells: 40 canonical
+                                                    deterministic + 20 randomized)
+  data/processed/synthetic_indian_iter3_irreversible/  PyBaMM NMC, irreversible plating   SYN_IN_PYBAMM_NMC_IRREV
+                                                    ablation cohort (30 cells, all
+                                                    randomized, deep Grade D)
+  data/processed/synthetic_indian_iter3_lfp/        NREL BLAST-Lite LFP-Gr 250Ah          SYN_IN_BLAST_LFP
+                                                    (40 cells, full Grade A→D, semi-
+                                                    empirical aging from Smith/Gasper
+                                                    et al. NREL J. Energy Storage 2024)
 
-Each synthetic cell becomes a single battery_id with the source pattern
-`SYN_IN_<chemistry>_<thermal_profile>` so train/val/test stratification can
-distribute thermal regimes evenly.
+The Iter-1/Iter-2 paths (`data/processed/synthetic_indian/` and
+`data/processed/synthetic_indian_lfp/`) are NOT loaded — those 70 cells stayed
+at SoH ≈ 100 % and were superseded by the Iter-3 corpus (see Iteration 3 in
+DATASET_IMPLEMENTATION_PLAN.md §12).
+
+Schema mapping into the unified per-cycle schema:
+  voltage_*       → v_*
+  temperature_*   → t_*
+  capacity        → capacity_Ah
+  ambient_profile → encoded into source as `<prefix>_<climate>`
+  soh (% scale)   → soh (0–1 fraction)
+
+Per-cycle dQ/dV peak features stay NaN for synthetic rows: PyBaMM combined
+CSVs store per-cycle aggregates only, and BLAST-Lite is a 0-D semi-empirical
+model that doesn't produce within-cycle V/Q traces. NaN dQ/dV is handled
+downstream by median imputation in src/data/training_data.py.
 """
 from __future__ import annotations
 
@@ -22,47 +42,64 @@ import pandas as pd
 
 from src.data.loaders.schema import UNIFIED_COLUMNS
 
-SYN_DIRS = [
-    Path("data/processed/synthetic_indian"),       # NMC sweep (DFN + degradation)
-    Path("data/processed/synthetic_indian_lfp"),   # LFP sweep (isothermal SPMe, no degradation)
+# Per-cohort directory + source-code prefix. Order matters only for log
+# readability; loader concatenates results.
+SYN_COHORTS = [
+    {
+        "dir": Path("data/processed/synthetic_indian_iter3"),
+        "combined_csv": "synthetic_indian_combined.csv",
+        "source_prefix": "SYN_IN_PYBAMM_NMC",   # canonical + randomized PyBaMM NMC
+    },
+    {
+        "dir": Path("data/processed/synthetic_indian_iter3_irreversible"),
+        "combined_csv": "synthetic_indian_combined.csv",
+        "source_prefix": "SYN_IN_PYBAMM_NMC_IRREV",  # irreversible-plating ablation
+    },
+    {
+        "dir": Path("data/processed/synthetic_indian_iter3_lfp"),
+        "combined_csv": "synthetic_indian_lfp_combined.csv",
+        "source_prefix": "SYN_IN_BLAST_LFP",   # NREL BLAST-Lite LFP
+    },
 ]
 
-# Mohtat2020 NMC and Prada2013 LFP both target 18650 form factor in their
-# bundled parameter sets. Nominal capacity comes from the simulation itself
-# (~5 Ah for Mohtat2020, ~2.3 Ah for Prada2013) — we record it as the
-# cycle-1 capacity per cell.
-FORM_FACTOR = "18650"
+# Reasonable form-factor mapping per cohort. PyBaMM cells use the OKane2022
+# parameter set (LG M50T, 21700 cylindrical). BLAST-Lite cells are the
+# Lfp_Gr_250AhPrismatic (large prismatic ~250 Ah, typical Indian-EV form
+# factor for Tata/MG packs). Different form factors are useful for
+# downstream chemistry-router features.
+FORM_FACTOR_BY_PREFIX = {
+    "SYN_IN_PYBAMM_NMC":       "21700",
+    "SYN_IN_PYBAMM_NMC_IRREV": "21700",
+    "SYN_IN_BLAST_LFP":        "prismatic",
+}
 
 
-def load() -> pd.DataFrame:
-    parts = []
-    for d in SYN_DIRS:
-        combined = d / "synthetic_indian_combined.csv"
-        if combined.exists():
-            df = pd.read_csv(combined)
-            if not df.empty:
-                parts.append(df)
-    if not parts:
+def _load_one_cohort(cohort: dict) -> pd.DataFrame:
+    combined = cohort["dir"] / cohort["combined_csv"]
+    if not combined.exists():
         return pd.DataFrame(columns=UNIFIED_COLUMNS)
-    raw = pd.concat(parts, ignore_index=True)
+    raw = pd.read_csv(combined)
     if raw.empty:
         return pd.DataFrame(columns=UNIFIED_COLUMNS)
 
-    # Determine effective nominal per battery (cycle-1 capacity)
+    # Nominal capacity per battery = cycle-1 capacity (matches what the
+    # synthetic generator records as the baseline).
     nominal_per_batt = raw.groupby("battery_id")["capacity"].first().to_dict()
+    raw = raw.copy()
     raw["nominal_Ah"] = raw["battery_id"].map(nominal_per_batt)
 
-    # Per-cycle SoH — the synthetic.py file already stores soh as % (0-100),
-    # but our unified schema uses 0-1 fraction. Convert.
+    # SoH: synthetic stores percent (0-100); unified expects 0-1 fraction.
     soh_frac = (raw["soh"].astype(float) / 100.0).clip(lower=0, upper=1.5)
+
+    prefix = cohort["source_prefix"]
+    source = prefix + "_" + raw["ambient_profile"].astype(str)
 
     out = pd.DataFrame({
         "battery_id": raw["battery_id"].astype(str),
         "cycle": raw["cycle"].astype(int),
-        # Encode thermal profile into source for downstream stratification
-        "source": "SYN_IN_" + raw["chemistry"].astype(str) + "_" + raw["ambient_profile"].astype(str),
+        "source": source,
         "chemistry": raw["chemistry"].astype(str),
-        "form_factor": FORM_FACTOR,
+        "form_factor": FORM_FACTOR_BY_PREFIX.get(prefix, "21700"),
         "nominal_Ah": raw["nominal_Ah"].astype(float),
         "second_life": False,
         "capacity_Ah": raw["capacity"].astype(float),
@@ -70,7 +107,7 @@ def load() -> pd.DataFrame:
         "v_min": raw.get("voltage_min", float("nan")),
         "v_max": raw.get("voltage_max", float("nan")),
         "v_mean": raw.get("voltage_mean", float("nan")),
-        "i_min": float("nan"),  # synthetic.py records only mean current
+        "i_min": float("nan"),
         "i_max": float("nan"),
         "i_mean": raw.get("current_mean", float("nan")),
         "t_min": float("nan"),
@@ -82,8 +119,12 @@ def load() -> pd.DataFrame:
         "ir_ohm": float("nan"),
         "coulombic_eff": float("nan"),
     })
-    # The PyBaMM combined CSVs store per-cycle aggregates only, not within-cycle
-    # waveforms — re-running the simulator with full V/I/Q traces would dwarf the
-    # gain (synthetic cells are <1 % of the corpus and pinned to train). dQ/dV
-    # peak features therefore stay NaN for synthetic rows.
     return out.reindex(columns=UNIFIED_COLUMNS)
+
+
+def load() -> pd.DataFrame:
+    parts = [_load_one_cohort(c) for c in SYN_COHORTS]
+    parts = [p for p in parts if not p.empty]
+    if not parts:
+        return pd.DataFrame(columns=UNIFIED_COLUMNS)
+    return pd.concat(parts, ignore_index=True).reindex(columns=UNIFIED_COLUMNS)
