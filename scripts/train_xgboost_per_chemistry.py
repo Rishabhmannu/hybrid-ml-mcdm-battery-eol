@@ -35,12 +35,15 @@ import xgboost as xgb
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+import joblib
+
 from src.data.training_data import load_feature_bundle, soh_to_grade
-from src.utils.config import RANDOM_SEED, RESULTS_DIR, TARGETS, XGBOOST_CONFIG
+from src.utils.config import MODELS_DIR, RANDOM_SEED, RESULTS_DIR, TARGETS, XGBOOST_CONFIG
 from src.utils.metrics import regression_metrics
 
 OUT_TBL = RESULTS_DIR / "tables" / "per_chemistry_submodels"
 OUT_FIG = RESULTS_DIR / "figures" / "per_chemistry_submodels"
+OUT_MODELS = MODELS_DIR / "per_chemistry"
 
 
 def _grade_accuracy(y_true_pct: np.ndarray, y_pred_pct: np.ndarray) -> float:
@@ -89,12 +92,21 @@ def main():
 
     OUT_TBL.mkdir(parents=True, exist_ok=True)
     OUT_FIG.mkdir(parents=True, exist_ok=True)
+    OUT_MODELS.mkdir(parents=True, exist_ok=True)
 
     print("=" * 70)
     print(f"Per-chemistry submodels  ({'SMOKE' if args.smoke else 'FULL'})")
     print("=" * 70)
 
     bundle = load_feature_bundle(smoke=args.smoke, exclude_capacity_features=True)
+
+    # Shared scaler + feature names (one of each, applied across all chemistries
+    # — consistent with how training_data.py builds the bundle). Saving them
+    # once at the router level keeps the per-chemistry artefacts small.
+    if not args.smoke:
+        joblib.dump(bundle.scaler, OUT_MODELS / "feature_scaler.pkl")
+        with open(OUT_MODELS / "feature_names.json", "w") as f:
+            json.dump(bundle.feature_names, f, indent=2)
     chemistries = sorted(bundle.train_chemistries.dropna().unique().tolist())
     print(f"\nChemistries available: {chemistries}")
 
@@ -103,6 +115,7 @@ def main():
         base_params.update({"n_estimators": 50, "max_depth": 4})
 
     rows = []
+    router_entries = []  # for the router_manifest.json
     t0 = time.time()
     for chem in chemistries:
         sl = _slice_to_chemistry(bundle, chem)
@@ -123,6 +136,22 @@ def main():
         m = regression_metrics(sl["y_te"], pred)
         grade_acc = _grade_accuracy(sl["y_te"], pred)
         elapsed = time.time() - t_inner
+
+        # Save per-chemistry model + manifest entry. Router can then load
+        # `router_manifest.json` and dispatch to the right .json by chemistry.
+        if not args.smoke:
+            chem_dir = OUT_MODELS / chem
+            chem_dir.mkdir(parents=True, exist_ok=True)
+            model_path = chem_dir / "xgboost_soh_audited.json"
+            model.save_model(str(model_path))
+            router_entries.append({
+                "chemistry": chem,
+                "model_path": str(model_path.relative_to(MODELS_DIR.parent)),
+                "n_train": int(n_tr),
+                "test_r2": float(m["r2"]),
+                "test_rmse": float(m["rmse"]),
+                "test_grade_acc": float(grade_acc),
+            })
 
         rows.append({
             "chemistry": chem,
@@ -149,6 +178,26 @@ def main():
     suffix = "_smoke" if args.smoke else ""
     csv_path = OUT_TBL / f"results{suffix}.csv"
     df.to_csv(csv_path, index=False)
+
+    # ---- Router manifest -----------------------------------------------
+    # Single-file index for downstream `ChemistryRouter.load(...)` to
+    # discover models keyed by chemistry. Lists each per-chemistry model's
+    # path + headline metrics + the shared scaler/feature names location.
+    if router_entries:
+        manifest = {
+            "iter": 3,
+            "feature_excludes_capacity": True,
+            "shared_scaler": str((OUT_MODELS / "feature_scaler.pkl").relative_to(MODELS_DIR.parent)),
+            "shared_feature_names": str((OUT_MODELS / "feature_names.json").relative_to(MODELS_DIR.parent)),
+            "chemistries": router_entries,
+            "fallback_global_model": "models/xgboost_soh/xgboost_soh_audited.json",
+        }
+        manifest_path = OUT_MODELS / "router_manifest.json"
+        with open(manifest_path, "w") as f:
+            json.dump(manifest, f, indent=2)
+        print(f"\n[router] manifest → {manifest_path.relative_to(PROJECT_ROOT)}")
+        print(f"         {len(router_entries)} per-chemistry models saved under "
+              f"{OUT_MODELS.relative_to(PROJECT_ROOT)}/")
 
     print()
     print("=" * 70)

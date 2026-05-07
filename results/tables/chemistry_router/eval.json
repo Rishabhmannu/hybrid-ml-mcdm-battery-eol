@@ -1,0 +1,25 @@
+{
+  "iter": 3,
+  "router_manifest": "models/per_chemistry/router_manifest.json",
+  "n_test_rows": 300869,
+  "n_chemistries_routed": 7,
+  "vectorized_dispatch_sanity_ok": true,
+  "router": {
+    "grade_acc": 0.9635090354938528,
+    "r2": 0.9965513944625854,
+    "rmse": 2.2025396773437333,
+    "mae": 1.1890584230422974
+  },
+  "global_audited": {
+    "grade_acc": 0.9598562829670055,
+    "r2": 0.9958121180534363,
+    "rmse": 2.4271506653533974,
+    "mae": 1.4059970378875732
+  },
+  "delta": {
+    "grade_acc_pp": 0.36527525268472694,
+    "r2": 0.0007392764091491699,
+    "rmse": -0.22461098800966406,
+    "mae": -0.21693861484527588
+  }
+}

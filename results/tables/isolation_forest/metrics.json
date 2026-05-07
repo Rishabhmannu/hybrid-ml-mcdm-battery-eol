@@ -2,16 +2,16 @@
   "smoke": false,
   "n_estimators": 200,
   "contamination": 0.05,
-  "n_features": 37,
-  "fit_time_s": 2.94,
-  "threshold": 5.2649304835171364e-17,
-  "train_anomaly_rate": 0.05,
-  "val_anomaly_rate": 0.039723037098568,
-  "test_anomaly_rate": 0.050653274348636784,
+  "n_features": 38,
+  "fit_time_s": 3.95,
+  "threshold": -0.0,
+  "train_anomaly_rate": 0.04999977668103352,
+  "val_anomaly_rate": 0.05321794132338371,
+  "test_anomaly_rate": 0.0669992588136365,
   "score_quartiles_test": {
-    "p25": -0.1805314209083056,
-    "p50": -0.13816618617148496,
-    "p75": -0.0866265644647663,
-    "p99": 0.04025590886455803
+    "p25": -0.15454139658459198,
+    "p50": -0.106479402271968,
+    "p75": -0.04884959837007302,
+    "p99": 0.039209471977187396
   }
 }
