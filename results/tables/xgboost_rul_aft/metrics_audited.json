@@ -1,0 +1,85 @@
+{
+  "smoke": false,
+  "audited": true,
+  "objective": "survival:aft",
+  "aft_distribution": "extreme",
+  "aft_sigma": 0.2,
+  "train_time_s": 2.01,
+  "best_iteration": 25,
+  "n_features": 32,
+  "n_train": 2238950,
+  "n_train_uncensored": 2040582,
+  "n_train_censored": 198368,
+  "n_val": 362359,
+  "n_test": 300869,
+  "target_range_cycles": 4160.0,
+  "params": {
+    "max_depth": 6,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": -1,
+    "objective": "survival:aft",
+    "eval_metric": "aft-nloglik",
+    "aft_loss_distribution": "extreme",
+    "aft_loss_distribution_scale": 0.2,
+    "verbosity": 0
+  },
+  "train_uncensored": {
+    "r2": -0.07973051071166992,
+    "rmse_cycles": 478.8149923248018,
+    "mae_cycles": 137.56968688964844,
+    "rmse_pct_of_range": 11.509975777038504,
+    "mae_pct_of_range": 3.3069636271550107
+  },
+  "val_uncensored": {
+    "r2": -0.07676112651824951,
+    "rmse_cycles": 365.9217385589438,
+    "mae_cycles": 104.87442016601562,
+    "rmse_pct_of_range": 8.796195638436147,
+    "mae_pct_of_range": 2.5210197155292215
+  },
+  "test_uncensored": {
+    "r2": -0.14878761768341064,
+    "rmse_cycles": 265.27618273226113,
+    "mae_cycles": 101.97875213623047,
+    "rmse_pct_of_range": 6.376831315679354,
+    "mae_pct_of_range": 2.4514123109670787
+  },
+  "train_full": {
+    "r2": -0.13484835624694824,
+    "rmse_cycles": 568.7465659236985,
+    "mae_cycles": 202.76458740234375,
+    "rmse_pct_of_range": 13.671792450088907,
+    "mae_pct_of_range": 4.874148735633263
+  },
+  "val_full": {
+    "r2": -0.1696949005126953,
+    "rmse_cycles": 475.28733085892367,
+    "mae_cycles": 187.27035522460938,
+    "rmse_pct_of_range": 11.42517622257028,
+    "mae_pct_of_range": 4.501691231360802
+  },
+  "test_full": {
+    "r2": -0.20388007164001465,
+    "rmse_cycles": 566.1350048795782,
+    "mae_cycles": 238.55413818359375,
+    "rmse_pct_of_range": 13.609014540374476,
+    "mae_pct_of_range": 5.734474475567158
+  },
+  "test_censored": {
+    "r2": -1.337733268737793,
+    "rmse_cycles": 1296.0584959792518,
+    "mae_cycles": 980.7113647460938,
+    "rmse_pct_of_range": 31.155252307193553,
+    "mae_pct_of_range": 23.574792421781098
+  },
+  "gates": {
+    "rmse_pct_of_range < 2% (uncensored test, gate-relevant)": false,
+    "rmse_pct_of_range < 2% (full test, transparency)": false
+  }
+}

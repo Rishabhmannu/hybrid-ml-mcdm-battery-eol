@@ -1,0 +1,30 @@
+{
+  "target_range_cycles": 4160.0,
+  "overall": {
+    "label": "overall",
+    "n": 300869,
+    "r2": 0.9147759079933167,
+    "rmse_cycles": 150.6293503002486,
+    "mae_cycles": 61.485137939453125,
+    "rmse_pct_of_range": 3.620897843755976,
+    "mae_pct_of_range": 1.4780081235445461
+  },
+  "uncensored_only": {
+    "label": "uncensored_only",
+    "n": 254107,
+    "r2": 0.8751247525215149,
+    "rmse_cycles": 87.4614200662212,
+    "mae_cycles": 30.36146354675293,
+    "rmse_pct_of_range": 2.1024379823610864,
+    "mae_pct_of_range": 0.7298428737200223
+  },
+  "censored_only": {
+    "label": "censored_only",
+    "n": 46762,
+    "r2": 0.8546846508979797,
+    "rmse_cycles": 323.13415122437925,
+    "mae_cycles": 230.61270141601562,
+    "rmse_pct_of_range": 7.7676478659706545,
+    "mae_pct_of_range": 5.543574553269607
+  }
+}

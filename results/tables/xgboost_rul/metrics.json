@@ -1,0 +1,49 @@
+{
+  "smoke": false,
+  "tuned": false,
+  "audited": false,
+  "train_time_s": 5.15,
+  "best_iteration": 298,
+  "n_features": 38,
+  "n_train": 2238950,
+  "n_val": 362359,
+  "n_test": 300869,
+  "target_range_cycles": 4160.0,
+  "params": {
+    "n_estimators": 500,
+    "max_depth": 6,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "tree_method": "hist",
+    "random_state": 42,
+    "n_jobs": -1,
+    "early_stopping_rounds": 30
+  },
+  "train": {
+    "r2": 0.9912397861480713,
+    "rmse_cycles": 49.969829764756554,
+    "mae_cycles": 17.95258903503418,
+    "rmse_pct_of_range": 1.201197830883571,
+    "mae_pct_of_range": 0.43155262103447545
+  },
+  "val": {
+    "r2": 0.9479897022247314,
+    "rmse_cycles": 100.22235045761998,
+    "mae_cycles": 37.85237503051758,
+    "rmse_pct_of_range": 2.409191116769711,
+    "mae_pct_of_range": 0.9099128613105187
+  },
+  "test": {
+    "r2": 0.9189096093177795,
+    "rmse_cycles": 146.93086038805802,
+    "mae_cycles": 60.630149841308594,
+    "rmse_pct_of_range": 3.531991836251395,
+    "mae_pct_of_range": 1.4574555250314565
+  },
+  "gates": {
+    "rmse_pct_of_range < 2%": false
+  }
+}

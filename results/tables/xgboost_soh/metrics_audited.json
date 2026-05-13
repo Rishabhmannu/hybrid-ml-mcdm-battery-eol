@@ -1,42 +1,40 @@
 {
   "smoke": false,
-  "tuned": false,
-  "train_time_s": 7.71,
-  "best_iteration": 499,
+  "tuned": true,
+  "train_time_s": 17.45,
+  "best_iteration": 757,
   "n_features": 32,
   "n_train": 2238950,
   "n_val": 362359,
   "n_test": 300869,
   "params": {
-    "n_estimators": 500,
-    "max_depth": 6,
-    "learning_rate": 0.05,
-    "subsample": 0.8,
-    "colsample_bytree": 0.8,
-    "reg_alpha": 0.1,
-    "reg_lambda": 1.0,
-    "tree_method": "hist",
-    "random_state": 42,
-    "n_jobs": -1,
+    "n_estimators": 765,
+    "max_depth": 10,
+    "learning_rate": 0.043364269603559595,
+    "subsample": 0.6504000200102535,
+    "colsample_bytree": 0.6447351004472387,
+    "reg_alpha": 0.00215396220472139,
+    "reg_lambda": 0.31819603759783355,
+    "min_child_weight": 9,
     "early_stopping_rounds": 30
   },
   "train": {
-    "r2": 0.9976004362106323,
-    "rmse": 1.7191726858403795,
-    "mae": 0.8892513513565063,
-    "mape": 70.4996109008789
+    "r2": 0.9993495941162109,
+    "rmse": 0.8950349480715827,
+    "mae": 0.343468576669693,
+    "mape": 46.608299255371094
   },
   "val": {
-    "r2": 0.9967548847198486,
-    "rmse": 2.2136007383355665,
-    "mae": 1.1492291688919067,
-    "mape": 178.00518798828125
+    "r2": 0.9976550340652466,
+    "rmse": 1.8817220988976715,
+    "mae": 0.8099375367164612,
+    "mape": 110.32335662841797
   },
   "test": {
-    "r2": 0.9958121180534363,
-    "rmse": 2.4271506653533974,
-    "mae": 1.4059970378875732,
-    "mape": 97.11591339111328
+    "r2": 0.9970449805259705,
+    "rmse": 2.0388284015373945,
+    "mae": 1.002389669418335,
+    "mape": 79.68814086914062
   },
   "gates": {
     "r2 > 0.95": true,

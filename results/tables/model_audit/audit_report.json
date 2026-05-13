@@ -1,0 +1,437 @@
+{
+  "xgboost_soh_audited": {
+    "name": "XGBoost SoH (audited)",
+    "type": "regression",
+    "tuned": false,
+    "train_r2": 0.9976004362106323,
+    "val_r2": 0.9967548847198486,
+    "test_r2": 0.9958121180534363,
+    "train_rmse_pct": 1.7191726858403795,
+    "val_rmse_pct": 2.2136007383355665,
+    "test_rmse_pct": 2.4271506653533974,
+    "test_mae_pct": 1.4059970378875732,
+    "gap_r2": 0.001788318157196045,
+    "gap_rmse_pp": 0.7079779795130179,
+    "gates": {
+      "r2 > 0.95": true,
+      "rmse < 2%": false,
+      "mae < 1.5%": true
+    },
+    "verdict_overfit": "negligible",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 500,
+      "best_epoch": 500,
+      "best_val_loss": 2.213600658050134,
+      "final_train_loss": 1.7191728506762651,
+      "final_val_loss": 2.213600658050134,
+      "final_train_to_val_gap_pct": 28.75963328407481,
+      "rises_after_best_epoch": 0,
+      "plateau_after_best_epoch": 0,
+      "early_stopped": false,
+      "best_to_end_ratio": 1.0
+    },
+    "best_iter": 499,
+    "n_features": 32,
+    "tuning_done": "default config only"
+  },
+  "xgboost_soh_unaudited": {
+    "name": "XGBoost SoH (unaudited, capacity included)",
+    "type": "regression",
+    "tuned": true,
+    "train_r2": 0.9999139904975891,
+    "val_r2": 0.9994074702262878,
+    "test_r2": 0.9991187453269958,
+    "train_rmse_pct": 0.3507936972467843,
+    "test_rmse_pct": 1.1133907331205402,
+    "test_mae_pct": 0.470737099647522,
+    "gap_r2": 0.0007952451705932617,
+    "gap_rmse_pp": 0.7625970358737559,
+    "gates": {
+      "r2 > 0.95": true,
+      "rmse < 2%": true,
+      "mae < 1.5%": true
+    },
+    "verdict_overfit": "negligible",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 442,
+      "best_epoch": 442,
+      "best_val_loss": 0.945892886275844,
+      "final_train_loss": 0.3507936788160481,
+      "final_val_loss": 0.945892886275844,
+      "final_train_to_val_gap_pct": 169.6436519233457,
+      "rises_after_best_epoch": 0,
+      "plateau_after_best_epoch": 0,
+      "early_stopped": false,
+      "best_to_end_ratio": 1.0
+    },
+    "best_iter": 441,
+    "tuning_done": "Optuna"
+  },
+  "grade_classifier": {
+    "name": "Grade Classifier (audited)",
+    "type": "classification",
+    "train_acc": null,
+    "val_acc": 0.9757340096423712,
+    "test_acc": 0.9598562829670055,
+    "train_f1macro": null,
+    "test_f1macro": 0.9282361437412642,
+    "gap_acc": null,
+    "gap_f1": null,
+    "gates": {
+      "accuracy \u2265 0.90": true,
+      "f1_macro \u2265 0.85": true
+    },
+    "verdict_overfit": "n/a",
+    "tuning_done": "n/a (derived from XGBoost SoH thresholds)"
+  },
+  "chemistry_router": {
+    "name": "ChemistryRouter (deployable)",
+    "type": "regression+routing",
+    "router_grade_acc": 0.9635090354938528,
+    "router_r2": 0.9965513944625854,
+    "router_rmse_pct": 2.2025396773437333,
+    "global_grade_acc": 0.9598562829670055,
+    "global_rmse_pct": 2.4271506653533974,
+    "delta_grade_pp": 0.36527525268472694,
+    "delta_rmse_pp": -0.22461098800966406,
+    "n_chemistries": 7,
+    "verdict_overfit": "n/a (router is composite \u2014 see per-chemistry submodels)",
+    "tuning_done": "default XGBoost config; per-chemistry submodels untuned"
+  },
+  "per_chemistry": {
+    "name": "Per-chemistry submodels (router constituents)",
+    "type": "regression",
+    "n_chemistries": 7,
+    "summary": [
+      {
+        "chemistry": "LCO",
+        "n_train": 20205,
+        "submodel_grade_acc": 0.8580336426914154,
+        "global_grade_acc": 0.8259860788863109,
+        "delta_grade_acc": 0.0320475638051044
+      },
+      {
+        "chemistry": "LFP",
+        "n_train": 718887,
+        "submodel_grade_acc": 0.9778239021192922,
+        "global_grade_acc": 0.979626392833734,
+        "delta_grade_acc": -0.0018024907144418
+      },
+      {
+        "chemistry": "NCA",
+        "n_train": 30605,
+        "submodel_grade_acc": 0.9853658536585366,
+        "global_grade_acc": 0.932047646057856,
+        "delta_grade_acc": 0.0533182076006806
+      },
+      {
+        "chemistry": "NMC",
+        "n_train": 1391168,
+        "submodel_grade_acc": 0.9653433010875214,
+        "global_grade_acc": 0.9647044239855442,
+        "delta_grade_acc": 0.0006388771019771
+      },
+      {
+        "chemistry": "Na-ion",
+        "n_train": 8593,
+        "submodel_grade_acc": 0.9980089596814335,
+        "global_grade_acc": 0.9651567944250872,
+        "delta_grade_acc": 0.0328521652563463
+      },
+      {
+        "chemistry": "Zn-ion",
+        "n_train": 50950,
+        "submodel_grade_acc": 0.9033260362968716,
+        "global_grade_acc": 0.8976061012640351,
+        "delta_grade_acc": 0.0057199350328366
+      },
+      {
+        "chemistry": "other",
+        "n_train": 18542,
+        "submodel_grade_acc": 0.9974542929877344,
+        "global_grade_acc": 0.9451515852811848,
+        "delta_grade_acc": 0.0523027077065495
+      }
+    ],
+    "tuning_done": "default XGBoost config \u2014 no per-chemistry tuning"
+  },
+  "isolation_forest": {
+    "name": "IsolationForest anomaly",
+    "type": "anomaly",
+    "train_anomaly_rate": 0.04999977668103352,
+    "val_anomaly_rate": 0.05321794132338371,
+    "test_anomaly_rate": 0.0669992588136365,
+    "drift_pp": 1.699948213260298,
+    "verdict_overfit": "drift only \u2014 not classical overfit (unsupervised)",
+    "tuning_done": "default contamination (0.05); no tuning attempted"
+  },
+  "vae_anomaly": {
+    "name": "VAE anomaly",
+    "type": "anomaly (deep)",
+    "train_anomaly_rate": 0.05000022331896648,
+    "val_anomaly_rate": 0.051015705419211334,
+    "test_anomaly_rate": 0.06532411115801229,
+    "best_epoch": 8,
+    "epochs_trained": 18,
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 18,
+      "best_epoch": 8,
+      "best_val_loss": 0.8432590870808826,
+      "final_train_loss": 0.4393068366289357,
+      "final_val_loss": 0.920889619056965,
+      "final_train_to_val_gap_pct": 109.62332981737826,
+      "rises_after_best_epoch": 9,
+      "plateau_after_best_epoch": 1,
+      "early_stopped": true,
+      "best_to_end_ratio": 0.4444444444444444
+    },
+    "verdict_overfit": "val volatile",
+    "tuning_done": "default (latent_dim=12, beta=1.0, lr=1e-3); no tuning"
+  },
+  "lstm_rul": {
+    "name": "LSTM RUL (replaced baseline)",
+    "type": "rul-sequence",
+    "train_r2": 0.987438976764679,
+    "val_r2": 0.8942273259162903,
+    "test_r2": 0.8443528413772583,
+    "train_rmse_pct": 1.433234309576295,
+    "test_rmse_pct": 4.887000646587858,
+    "gap_r2": 0.14308613538742065,
+    "gap_rmse_pp": 3.4537663370115634,
+    "best_epoch": 4,
+    "epochs_trained": 12,
+    "gates": {
+      "rmse_pct_of_range < 2%": false
+    },
+    "verdict_overfit": "MODERATE",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 12,
+      "best_epoch": 4,
+      "best_val_loss": 19408.2071639561,
+      "final_train_loss": 3774.3586554071103,
+      "final_val_loss": 19689.704939612675,
+      "final_train_to_val_gap_pct": 421.67021571745414,
+      "rises_after_best_epoch": 7,
+      "plateau_after_best_epoch": 1,
+      "early_stopped": true,
+      "best_to_end_ratio": 0.3333333333333333
+    },
+    "tuning_done": "Iter-2 regularisation recipe (Hong/Tang/Chen) applied; architecture not tuned; AdamW + dropout 0.35 + patience 8 fixed"
+  },
+  "xgboost_rul_baseline": {
+    "name": "XGBoost RUL (baseline)",
+    "type": "rul-tabular",
+    "tuned": false,
+    "train_r2": 0.9912397861480713,
+    "val_r2": 0.9479897022247314,
+    "test_r2": 0.9189096093177795,
+    "train_rmse_pct": 1.201197830883571,
+    "test_rmse_pct": 3.531991836251395,
+    "test_uncensored_r2": null,
+    "test_uncensored_rmse_pct": null,
+    "gap_r2": 0.07233017683029175,
+    "gap_r2_uncensored": null,
+    "gap_rmse_pp": 2.330794005367824,
+    "gap_rmse_pp_uncensored": null,
+    "gates": {
+      "rmse_pct_of_range < 2%": false
+    },
+    "best_iter": 298,
+    "verdict_overfit": "MODERATE",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 329,
+      "best_epoch": 299,
+      "best_val_loss": 100.222351216998,
+      "final_train_loss": 48.6558609863838,
+      "final_val_loss": 100.32612770187468,
+      "final_train_to_val_gap_pct": 106.19535995869163,
+      "rises_after_best_epoch": 0,
+      "plateau_after_best_epoch": 30,
+      "early_stopped": true,
+      "best_to_end_ratio": 0.9088145896656535
+    },
+    "tuning_done": "default XGBoost config only"
+  },
+  "xgboost_rul_audited": {
+    "name": "XGBoost RUL audited",
+    "type": "rul-tabular",
+    "tuned": false,
+    "train_r2": 0.9903311729431152,
+    "val_r2": 0.9453134536743164,
+    "test_r2": 0.9071293473243713,
+    "train_rmse_pct": 1.261955678827817,
+    "test_rmse_pct": 3.779847581903472,
+    "test_uncensored_r2": 0.8410011529922485,
+    "test_uncensored_rmse_pct": 2.3723677474040588,
+    "gap_r2": 0.0832018256187439,
+    "gap_r2_uncensored": 0.1493300199508667,
+    "gap_rmse_pp": 2.517891903075655,
+    "gap_rmse_pp_uncensored": 1.1104120685762418,
+    "gates": {
+      "rmse_pct_of_range < 2% (full test)": false,
+      "rmse_pct_of_range < 2% (uncensored test)": false
+    },
+    "best_iter": 416,
+    "verdict_overfit": "MODERATE",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 447,
+      "best_epoch": 417,
+      "best_val_loss": 102.76852698382278,
+      "final_train_loss": 51.30027312702374,
+      "final_val_loss": 102.86461258820825,
+      "final_train_to_val_gap_pct": 100.51474644882865,
+      "rises_after_best_epoch": 0,
+      "plateau_after_best_epoch": 30,
+      "early_stopped": true,
+      "best_to_end_ratio": 0.9328859060402684
+    },
+    "tuning_done": "default XGBoost config only"
+  },
+  "xgboost_rul_audited_uncens": {
+    "name": "XGBoost RUL audited+uncensored (PRODUCTION)",
+    "type": "rul-tabular",
+    "tuned": false,
+    "train_r2": 0.9878178834915161,
+    "val_r2": 0.9251943826675415,
+    "test_r2": 0.6954152584075928,
+    "train_rmse_pct": 1.2225812451996876,
+    "test_rmse_pct": 6.845247385059682,
+    "test_uncensored_r2": 0.8959919214248657,
+    "test_uncensored_rmse_pct": 1.918750517968808,
+    "gap_r2": 0.29240262508392334,
+    "gap_r2_uncensored": 0.09182596206665039,
+    "gap_rmse_pp": 5.622666139859994,
+    "gap_rmse_pp_uncensored": 0.6961692727691204,
+    "gates": {
+      "rmse_pct_of_range < 2% (full test)": false,
+      "rmse_pct_of_range < 2% (uncensored test)": true
+    },
+    "best_iter": 206,
+    "verdict_overfit": "SEVERE",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 237,
+      "best_epoch": 207,
+      "best_val_loss": 96.4485278637074,
+      "final_train_loss": 49.534384552695016,
+      "final_val_loss": 97.14105595625809,
+      "final_train_to_val_gap_pct": 96.1083332991021,
+      "rises_after_best_epoch": 0,
+      "plateau_after_best_epoch": 30,
+      "early_stopped": true,
+      "best_to_end_ratio": 0.8734177215189873
+    },
+    "tuning_done": "default XGBoost config only"
+  },
+  "xgboost_rul_audited_imputed": {
+    "name": "XGBoost RUL audited+imputed (negative)",
+    "type": "rul-tabular",
+    "tuned": false,
+    "train_r2": 0.8233932256698608,
+    "val_r2": 0.709348201751709,
+    "test_r2": 0.7408300638198853,
+    "train_rmse_pct": 1.4665943955418785,
+    "test_rmse_pct": 1.8048786688066945,
+    "test_uncensored_r2": 0.6003673076629639,
+    "test_uncensored_rmse_pct": 0.7441706022261938,
+    "gap_r2": 0.08256316184997559,
+    "gap_r2_uncensored": 0.22302591800689697,
+    "gap_rmse_pp": 0.3382842732648159,
+    "gap_rmse_pp_uncensored": -0.7224237933156847,
+    "gates": {
+      "rmse_pct_of_range < 2% (full test)": true,
+      "rmse_pct_of_range < 2% (uncensored test)": true
+    },
+    "best_iter": 23,
+    "verdict_overfit": "MILD",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 54,
+      "best_epoch": 24,
+      "best_val_loss": 245.8890205276223,
+      "final_train_loss": 192.24731015895895,
+      "final_val_loss": 332.49104347189893,
+      "final_train_to_val_gap_pct": 72.94964657605871,
+      "rises_after_best_epoch": 28,
+      "plateau_after_best_epoch": 2,
+      "early_stopped": true,
+      "best_to_end_ratio": 0.4444444444444444
+    },
+    "tuning_done": "default XGBoost config only"
+  },
+  "xgboost_rul_aft": {
+    "name": "XGBoost RUL AFT (negative result)",
+    "type": "rul-survival",
+    "objective": "survival:aft",
+    "aft_distribution": "extreme",
+    "aft_sigma": 0.2,
+    "train_uncens_r2": -0.07973051071166992,
+    "test_uncens_r2": -0.14878761768341064,
+    "test_uncens_rmse_pct": 6.376831315679354,
+    "gap_r2_uncensored": 0.06905710697174072,
+    "gates": {
+      "rmse_pct_of_range < 2% (uncensored test, gate-relevant)": false,
+      "rmse_pct_of_range < 2% (full test, transparency)": false
+    },
+    "verdict_overfit": "MILD",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 31,
+      "best_epoch": 1,
+      "best_val_loss": 4.251039061641916,
+      "final_train_loss": 4.988750253131206,
+      "final_val_loss": 4.800937402939291,
+      "final_train_to_val_gap_pct": -3.764727450006819,
+      "rises_after_best_epoch": 30,
+      "plateau_after_best_epoch": 0,
+      "early_stopped": true,
+      "best_to_end_ratio": 0.03225806451612903
+    },
+    "tuning_done": "tested 4 (distribution \u00d7 \u03c3) combos; none of them work"
+  },
+  "tcn_rul": {
+    "name": "TCN RUL (Bai 2018, secondary DL baseline)",
+    "type": "rul-sequence",
+    "train_r2": 0.9238011837005615,
+    "val_r2": 0.9136001467704773,
+    "test_r2": 0.704336404800415,
+    "train_rmse_pct": 3.046089036846606,
+    "test_rmse_pct": 6.735514799539278,
+    "test_uncensored_r2": 0.8478332757949829,
+    "test_uncensored_rmse_pct": 2.2260116994213526,
+    "gap_r2": 0.21946477890014648,
+    "gap_r2_uncensored": 0.07596790790557861,
+    "gap_rmse_pp": 3.6894257626926716,
+    "gap_rmse_pp_uncensored": -0.8200773374252535,
+    "best_epoch": 11,
+    "epochs_trained": 19,
+    "n_parameters": 64449,
+    "receptive_field": 61,
+    "gates": {
+      "rmse_pct_of_range < 2% strict (uncensored test)": false,
+      "rmse_pct_of_range < 3% soft   (uncensored test)": true,
+      "rmse_pct_of_range < 5% widely-cited literature": true
+    },
+    "verdict_overfit": "SEVERE",
+    "curve_audit": {
+      "available": true,
+      "epochs_total": 19,
+      "best_epoch": 11,
+      "best_val_loss": 10217.652928410462,
+      "final_train_loss": 3145.18676439459,
+      "final_val_loss": 10937.73535375773,
+      "final_train_to_val_gap_pct": 247.76107662602064,
+      "rises_after_best_epoch": 7,
+      "plateau_after_best_epoch": 1,
+      "early_stopped": true,
+      "best_to_end_ratio": 0.5789473684210527
+    },
+    "tuning_done": "default literature-recipe hyperparameters; no tuning attempted"
+  }
+}

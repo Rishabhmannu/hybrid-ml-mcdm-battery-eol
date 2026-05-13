@@ -1,22 +1,22 @@
 {
   "smoke": false,
-  "epochs_trained": 11,
-  "train_time_s": 2446.13,
-  "best_epoch": 1,
+  "epochs_trained": 12,
+  "train_time_s": 2652.46,
+  "best_epoch": 2,
   "n_features": 38,
-  "anomaly_threshold": 0.22347654402256012,
+  "anomaly_threshold": 0.2967161536216736,
   "train_anomaly_rate": 0.05000022331896648,
-  "val_anomaly_rate": 0.05081976713701054,
-  "test_anomaly_rate": 0.0571777085708398,
-  "train_recon_err_mean": 0.21014758944511414,
-  "val_recon_err_mean": 0.6318535208702087,
-  "test_recon_err_mean": 0.1746310591697693,
+  "val_anomaly_rate": 0.05198987744198433,
+  "test_anomaly_rate": 0.059441152129332035,
+  "train_recon_err_mean": 22.068904876708984,
+  "val_recon_err_mean": 0.5984534025192261,
+  "test_recon_err_mean": 0.16067615151405334,
   "hyperparameters": {
     "beta_target": 1.0,
     "beta_anneal": true,
     "anneal_epochs": 10,
-    "latent_dim": 12,
-    "tag": "_V2_betaanneal"
+    "latent_dim": 8,
+    "tag": "_V4_combo"
   },
   "config": {
     "latent_dim": 12,

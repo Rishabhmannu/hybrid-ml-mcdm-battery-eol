@@ -1,0 +1,10 @@
+{
+  "n_batteries": 1581,
+  "n_uncensored": 1282,
+  "n_censored": 299,
+  "censoring_rate": 0.18912080961416824,
+  "median_min_soh_overall": 0.5829995223883819,
+  "median_min_soh_censored": 0.816869924242421,
+  "median_min_soh_uncensored": 0.40871380911002636,
+  "eol_threshold": 0.8
+}
