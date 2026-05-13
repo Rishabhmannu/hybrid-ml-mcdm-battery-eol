@@ -1,12 +1,19 @@
 """
 Stage 12 — End-to-end smoke test.
 
-One battery -> proxy SoH -> grade -> Fuzzy BWM-TOPSIS routing -> unified DPP JSON.
+One battery -> XGBoost SoH (audited) -> XGBoost RUL (audited+uncensored) ->
+grade -> Fuzzy BWM-TOPSIS routing -> unified DPP JSON.
 
-Picks a real cell from unified.parquet, infers SoH from the latest cycle's
-capacity-fade trend, classifies it into A-D, runs canonical-criteria TOPSIS
-using literature weights from fuzzy_bwm_input.csv, and emits a DPP that
+Picks a real cell from unified.parquet, runs the cell's last observed cycle
+through the deployable ML models (audited XGBoost SoH for current SoH, audited
+XGBoost RUL for remaining-life), classifies into A-D, runs canonical-criteria
+TOPSIS using literature weights from fuzzy_bwm_input.csv, and emits a DPP that
 validates against the unified schema.
+
+Iter-3 §3.12 update (2026-05-08): replaced capacity-fade SoH proxy and linear
+RUL extrapolation with actual ML predictions. RUL uses the Exp 2 winner —
+audited XGBoost trained on uncensored cells only, the only RUL model to pass
+the 2 % test-RMSE-of-range gate (1.92 % on uncensored test).
 """
 from __future__ import annotations
 import argparse
@@ -14,11 +21,15 @@ import json
 import sys
 from pathlib import Path
 
+import joblib
+import numpy as np
 import pandas as pd
+import xgboost as xgb
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.data.training_data import load_feature_bundle, soh_to_grade
 from src.dpp.schema_mapper import (
     build_dpp,
     grade_from_soh,
@@ -29,6 +40,39 @@ from src.mcdm.topsis import run_canonical_topsis
 
 UNIFIED_PARQUET = PROJECT_ROOT / "data" / "processed" / "cycling" / "unified.parquet"
 RESULTS_DIR = PROJECT_ROOT / "results" / "dpp_output"
+
+SOH_MODEL_PATH = PROJECT_ROOT / "models" / "xgboost_soh" / "xgboost_soh_audited.json"
+RUL_MODEL_PATH = PROJECT_ROOT / "models" / "xgboost_rul" / "xgboost_rul_audited_uncensored.json"
+
+
+def _load_ml_models():
+    """Return (soh_model, rul_model) — both audited XGBoost regressors."""
+    if not SOH_MODEL_PATH.exists():
+        raise SystemExit(f"Missing SoH model: {SOH_MODEL_PATH.relative_to(PROJECT_ROOT)} "
+                         "— train via `scripts/train_xgboost_soh.py --exclude-capacity`")
+    if not RUL_MODEL_PATH.exists():
+        raise SystemExit(f"Missing RUL model: {RUL_MODEL_PATH.relative_to(PROJECT_ROOT)} "
+                         "— train via `scripts/train_xgboost_rul.py --exclude-capacity --exclude-censored`")
+    soh_model = xgb.XGBRegressor()
+    soh_model.load_model(str(SOH_MODEL_PATH))
+    rul_model = xgb.XGBRegressor()
+    rul_model.load_model(str(RUL_MODEL_PATH))
+    return soh_model, rul_model
+
+
+def _find_battery_in_bundle(bundle, battery_id: str):
+    """Return (X_last_cycle, last_cycle_num, split_name) for the chosen battery,
+    or raise if not found in any split."""
+    for split in ("train", "val", "test"):
+        bids = getattr(bundle, f"{split}_battery_ids")
+        mask = (bids == battery_id).to_numpy()
+        if mask.any():
+            X = getattr(bundle, f"X_{split}")
+            cycles = getattr(bundle, f"{split}_cycles").to_numpy()
+            cell_idx = np.where(mask)[0]
+            local_last = cell_idx[np.argmax(cycles[cell_idx])]
+            return X[local_last:local_last + 1], int(cycles[local_last]), split
+    raise SystemExit(f"battery_id {battery_id!r} not found in any split of unified.parquet")
 
 
 def pick_battery(df: pd.DataFrame, battery_id: str | None) -> pd.DataFrame:
@@ -52,35 +96,14 @@ def _safe_float(v, default=None):
     return float(v)
 
 
-def derive_battery_summary(cell_df: pd.DataFrame) -> dict:
-    """Roll a per-cycle frame into a single-cell DPP-input dict."""
+def derive_battery_summary(cell_df: pd.DataFrame, soh_pred_pct: float, rul_pred_cycles: float) -> dict:
+    """Roll a per-cycle frame into a single-cell DPP-input dict using ML predictions
+    for SoH and RUL (both from audited XGBoost models per Iter-3 §3.12)."""
     cell_df = cell_df.copy()
     last = cell_df.iloc[-1]
     first = cell_df.iloc[0]
 
     nominal = _safe_float(last["nominal_Ah"]) or _safe_float(first["nominal_Ah"]) or 1.0
-    last_cap = _safe_float(last["capacity_Ah"])
-
-    if pd.notna(last["soh"]):
-        soh_pct = float(last["soh"]) * 100.0 if last["soh"] <= 1.5 else float(last["soh"])
-    elif last_cap is not None:
-        soh_pct = max(0.0, min(110.0, (last_cap / nominal) * 100.0))
-    else:
-        soh_pct = float("nan")
-
-    rolling = cell_df.tail(20)
-    if len(rolling) >= 5 and rolling["soh"].notna().sum() >= 5:
-        soh_series = rolling["soh"].dropna()
-        if soh_series.iloc[-1] <= 1.5:
-            soh_series = soh_series * 100.0
-        delta_per_cycle = (soh_series.iloc[-1] - soh_series.iloc[0]) / max(1, len(soh_series) - 1)
-        if delta_per_cycle < 0:
-            cycles_to_eol = max(0, (soh_pct - 60.0) / abs(delta_per_cycle))
-            rul = float(cycles_to_eol)
-        else:
-            rul = None
-    else:
-        rul = None
 
     return {
         "battery_id": str(last["battery_id"]),
@@ -90,34 +113,54 @@ def derive_battery_summary(cell_df: pd.DataFrame) -> dict:
         "voltage_min_V": _safe_float(cell_df["v_min"].min(), default=2.0),
         "voltage_max_V": _safe_float(cell_df["v_max"].max(), default=4.2),
         "cycles_completed": int(cell_df["cycle"].max()),
-        "soh_percent": soh_pct,
-        "rul_remaining_cycles": rul,
+        "soh_percent": float(soh_pred_pct),
+        "rul_remaining_cycles": float(max(0.0, rul_pred_cycles)) if not np.isnan(rul_pred_cycles) else None,
+        "soh_observed_pct": (float(last["soh"]) * 100.0 if pd.notna(last["soh"]) and last["soh"] <= 1.5
+                             else (float(last["soh"]) if pd.notna(last["soh"]) else float("nan"))),
         "second_life": bool(last["second_life"]) if pd.notna(last["second_life"]) else False,
         "source": str(last["source"]),
     }
 
 
 def run(battery_id: str | None) -> Path:
-    print("Stage 12 — End-to-end smoke test")
+    print("Stage 12 — End-to-end smoke test (Iter-3 §3.12 ML-deployable refresh)")
     print("=" * 70)
-    print(f"Loading {UNIFIED_PARQUET.relative_to(PROJECT_ROOT)} ...")
+    print(f"[Load] {UNIFIED_PARQUET.relative_to(PROJECT_ROOT)} ...")
     df = pd.read_parquet(UNIFIED_PARQUET)
     print(f"  {len(df):,} rows · {df['battery_id'].nunique():,} batteries")
 
     cell_df = pick_battery(df, battery_id)
-    summary = derive_battery_summary(cell_df)
-    print(f"\n[1/5] Selected: {summary['battery_id']}")
-    print(f"      source={summary['source']}  chemistry={summary['chemistry']}  "
-          f"cycles={summary['cycles_completed']}  nominal={summary['nominal_Ah']:.2f} Ah")
+    chosen_id = str(cell_df.iloc[-1]["battery_id"])
+    chosen_source = str(cell_df.iloc[-1]["source"])
+    chosen_chem = str(cell_df.iloc[-1]["chemistry"])
+    print(f"\n[1/6] Selected battery: {chosen_id}")
+    print(f"      source={chosen_source}  chemistry={chosen_chem}  "
+          f"cycles_observed={int(cell_df['cycle'].max())}")
 
-    print(f"\n[2/5] SoH inference (capacity-fade proxy)")
-    print(f"      SoH = {summary['soh_percent']:.2f}%   "
-          f"RUL ≈ {summary['rul_remaining_cycles']!s} cycles")
+    print(f"\n[2/6] Loading audited ML models")
+    soh_model, rul_model = _load_ml_models()
+    print(f"      SoH: {SOH_MODEL_PATH.relative_to(PROJECT_ROOT)}")
+    print(f"      RUL: {RUL_MODEL_PATH.relative_to(PROJECT_ROOT)}")
+
+    print(f"\n[3/6] Building feature bundle (audited mode) and locating chosen cell ...")
+    bundle = load_feature_bundle(exclude_capacity_features=True, verbose=False)
+    X_last, cycle_last, split_name = _find_battery_in_bundle(bundle, chosen_id)
+    print(f"      cell located in {split_name} split  ·  last observed cycle = {cycle_last}  "
+          f"·  feature dim = {X_last.shape[1]}")
+
+    print(f"\n[4/6] ML inference (XGBoost SoH audited + XGBoost RUL audited+uncensored)")
+    soh_pred_pct = float(soh_model.predict(X_last)[0])
+    rul_pred_cyc = float(rul_model.predict(X_last)[0])
+    summary = derive_battery_summary(cell_df, soh_pred_pct, rul_pred_cyc)
+    obs_str = (f" (observed {summary['soh_observed_pct']:.2f}%)"
+               if not np.isnan(summary["soh_observed_pct"]) else "")
+    print(f"      SoH (predicted) = {summary['soh_percent']:.2f}%{obs_str}")
+    print(f"      RUL (predicted) ≈ {summary['rul_remaining_cycles']:.0f} cycles")
 
     grade = grade_from_soh(summary["soh_percent"])
-    print(f"\n[3/5] Grade classification: {grade}")
+    print(f"      Grade classification: {grade}")
 
-    print(f"\n[4/5] Fuzzy BWM-TOPSIS routing (canonical 6 criteria)")
+    print(f"\n[5/6] Fuzzy BWM-TOPSIS routing (canonical 6 criteria)")
     topsis_out = run_canonical_topsis(grade)
     weights_str = ", ".join(f"{k}={v:.3f}" for k, v in topsis_out["weights"].items())
     print(f"      weights: {weights_str}")
@@ -129,7 +172,7 @@ def run(battery_id: str | None) -> Path:
 
     rec = next(r for r in topsis_out["ranked"] if r["rank"] == 1)
 
-    print(f"\n[5/5] Building unified DPP JSON")
+    print(f"\n[6/6] Building unified DPP JSON")
     dpp = build_dpp(
         battery_id=summary["battery_id"],
         chemistry=summary["chemistry"],
@@ -140,11 +183,13 @@ def run(battery_id: str | None) -> Path:
         cycles_completed=summary["cycles_completed"],
         soh_percent=summary["soh_percent"],
         rul_remaining_cycles=summary["rul_remaining_cycles"],
-        estimation_method="capacity-fade proxy (smoke test); will be replaced by XGBoost SoH (Stage 9)",
+        estimation_method=("XGBoost SoH (audited, R²=0.996, RMSE=2.43% on test) + "
+                           "XGBoost RUL (audited+uncensored, 1.92% RMSE-of-range on uncensored test). "
+                           "Iter-3 §3.12 deployable."),
         estimation_confidence={
-            "metric": "proxy",
-            "value": 0.0,
-            "validation_set": "none — Stage 12 placeholder",
+            "metric": "audited test RMSE",
+            "value": 0.0243,  # SoH RMSE fraction
+            "validation_set": "uncensored test partition (254,107 rows) — Iter-3 audited gate metric",
         },
         data_source="field" if "synthetic" not in summary["source"].lower() else "simulated",
         grade=grade,
@@ -159,8 +204,9 @@ def run(battery_id: str | None) -> Path:
             "data/processed/mcdm_weights/fuzzy_bwm_input.csv",
         ],
         model_artifacts=[
+            f"models/xgboost_soh/xgboost_soh_audited.json",
+            f"models/xgboost_rul/xgboost_rul_audited_uncensored.json",
             "src.mcdm.topsis.run_canonical_topsis (literature weights)",
-            "capacity-fade proxy (no trained ML model yet)",
         ],
     )
 

@@ -82,12 +82,48 @@ def _global_per_chemistry_baseline() -> pd.DataFrame:
     return out.merge(g, on="chemistry", how="left")
 
 
+def _optuna_per_chemistry(X_tr, y_tr, X_va, y_va, n_trials: int,
+                          random_state: int = 42) -> dict:
+    """Run an Optuna sweep on a single-chemistry slice. Returns best_params dict."""
+    import optuna
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+    def objective(trial):
+        params = {
+            "n_estimators": trial.suggest_int("n_estimators", 200, 1000),
+            "max_depth": trial.suggest_int("max_depth", 3, 9),
+            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+            "subsample": trial.suggest_float("subsample", 0.6, 1.0),
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
+            "reg_alpha": trial.suggest_float("reg_alpha", 1e-3, 10.0, log=True),
+            "reg_lambda": trial.suggest_float("reg_lambda", 1e-3, 10.0, log=True),
+            "min_child_weight": trial.suggest_int("min_child_weight", 1, 10),
+            "tree_method": "hist",
+            "random_state": random_state,
+            "early_stopping_rounds": 30,
+        }
+        model = xgb.XGBRegressor(**params)
+        model.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=False)
+        from sklearn.metrics import r2_score
+        return r2_score(y_va, model.predict(X_va))
+
+    study = optuna.create_study(direction="maximize")
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+    return study.best_params
+
+
 def main():
     p = argparse.ArgumentParser(description="Per-chemistry XGBoost submodels")
     p.add_argument("--smoke", action="store_true",
                    help="Quick run on smoke bundle, 50 trees")
     p.add_argument("--min-train-rows", type=int, default=2000,
                    help="Skip chemistries with fewer training rows than this")
+    p.add_argument("--tune", action="store_true",
+                   help="Optuna sweep per chemistry (Iter-3 §3.14 optimization round). "
+                        "Each chemistry gets its own best_params; total wall-clock "
+                        "≈ 7 chemistries × ~5-10 min/chem.")
+    p.add_argument("--trials", type=int, default=30,
+                   help="Optuna trials per chemistry (default %(default)s)")
     args = p.parse_args()
 
     OUT_TBL.mkdir(parents=True, exist_ok=True)
@@ -128,7 +164,21 @@ def main():
             continue
 
         t_inner = time.time()
-        model = xgb.XGBRegressor(**base_params)
+        if args.tune and not args.smoke:
+            best_params = _optuna_per_chemistry(
+                sl["X_tr"], sl["y_tr"], sl["X_va"], sl["y_va"],
+                n_trials=args.trials,
+            )
+            params = {**best_params,
+                      "tree_method": "hist", "random_state": 42,
+                      "early_stopping_rounds": 30}
+            print(f"  [{chem:10s}]  Optuna best: "
+                  f"n_est={params['n_estimators']}  depth={params['max_depth']}  "
+                  f"lr={params['learning_rate']:.4f}  "
+                  f"reg_lambda={params['reg_lambda']:.3f}")
+        else:
+            params = base_params
+        model = xgb.XGBRegressor(**params)
         model.fit(sl["X_tr"], sl["y_tr"],
                   eval_set=[(sl["X_va"], sl["y_va"])],
                   verbose=False)
@@ -175,7 +225,7 @@ def main():
         df["delta_rmse"] = df["submodel_rmse"] - df["global_rmse"]
         df["delta_grade_acc"] = df["submodel_grade_acc"] - df["global_grade_acc"]
 
-    suffix = "_smoke" if args.smoke else ""
+    suffix = "_smoke" if args.smoke else ("_tuned" if args.tune else "")
     csv_path = OUT_TBL / f"results{suffix}.csv"
     df.to_csv(csv_path, index=False)
 
