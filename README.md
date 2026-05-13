@@ -1,32 +1,62 @@
 # Hybrid ML-MCDM Framework for EV Battery End-of-Life Routing
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-deploying-lightgrey?style=flat-square&logo=streamlit&logoColor=white)](#)
+[![Model Weights](https://img.shields.io/badge/Model%20Weights-Hugging%20Face-FFD21E?style=flat-square&logo=huggingface&logoColor=white)](https://huggingface.co/cmpunkmannu/hybrid-ml-mcdm-battery-eol)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
+[![License](https://img.shields.io/badge/License-MIT-2EA44F?style=flat-square)](LICENSE)
+
 A research-grade pipeline that predicts an electric-vehicle battery's State of Health and Remaining Useful Life from cycle data, then recommends an end-of-life route — grid-scale energy storage, home battery, component reuse, or direct recycling — under five regulatory weight regimes. Outputs a Digital Product Passport reconciled across EU Regulation 2023/1542 Annex XIII, the Global Battery Alliance Battery Pass v1.2, and India BWMR 2022 (with 2024 and 2025 amendments).
 
-| | |
-|---|---|
-| Live demo | _deploying to Streamlit Community Cloud — link to follow_ |
-| Trained model weights | [`cmpunkmannu/hybrid-ml-mcdm-battery-eol`](https://huggingface.co/cmpunkmannu/hybrid-ml-mcdm-battery-eol) |
-| Manuscript | Submitted to MDPI *Batteries* / *World Electric Vehicle Journal* — preprint to follow |
+> **Manuscript** — in preparation.
 
 ## Pipeline
 
 ```mermaid
 flowchart LR
-    A[Per-cycle data] --> B[Anomaly gate]
-    B --> C[State of Health]
-    C --> D[Grade A/B/C/D]
-    D --> E[Remaining Useful Life]
-    E --> F[MCDM routing]
-    F --> G[Digital Product Passport]
+    subgraph INGEST["Data ingestion"]
+        D1[Public cell datasets<br/>BatteryLife · NASA · CALCE · Stanford<br/>1,451 cells]
+        D2[Synthetic Indian cells<br/>PyBaMM + BLAST-Lite<br/>130 cells]
+        D3[Regulatory PDFs<br/>EU 2023/1542 · GBA · BWMR]
+        D4[MCDM literature<br/>12+ BWM/AHP papers]
+    end
+
+    PROC[Unify · clean · split<br/>1,581 cells · 7 chemistries]
+
+    subgraph INFER["ML inference"]
+        ANOM[Anomaly gate<br/>IsoForest + VAE]
+        HEALTH[State of Health + Grade<br/>XGBoost + 7 chemistry specialists]
+        LIFE[Remaining Useful Life<br/>XGBoost + TCN]
+        SHAP[SHAP feature attributions]
+    end
+
+    subgraph DECIDE["Decision layer"]
+        BWM[Fuzzy BWM weights<br/>5 regulatory regimes]
+        TOPSIS[TOPSIS ranking<br/>4 EoL routes]
+    end
+
+    DPP[Digital Product Passport<br/>schema-validated JSON]
+
+    D1 --> PROC
+    D2 --> PROC
+    PROC --> ANOM
+    ANOM --> HEALTH
+    HEALTH --> LIFE
+    HEALTH --> SHAP
+    D4 --> BWM
+    HEALTH --> TOPSIS
+    LIFE --> TOPSIS
+    BWM --> TOPSIS
+    D3 --> DPP
+    SHAP --> DPP
+    TOPSIS --> DPP
 ```
 
 ## Key results
 
-- State of Health predicted to within **2.43 percentage points RMSE** on held-out test cells (R² 0.996).
-- Chemistry-specialist routing lifts grade-accuracy on under-represented chemistries by up to **+5 percentage points** versus a single global model.
-- Remaining Useful Life predicted to within **1.92 % of the prediction range** (classical) and **2.23 %** (deep learning) on the uncensored held-out test partition.
-- Routing recommendation flips under different regulatory regimes — the headline regulatory-sensitivity finding the framework operationalises.
-- Training corpus of 1,581 cells across 7 chemistries (NMC, LFP, NCA, LCO, Zn-ion, Na-ion, other) drawn from BatteryLife, NASA-PCOE, CALCE, and Stanford datasets, plus 130 synthetic Indian-context cells generated via PyBaMM (electrochemical) and BLAST-Lite (semi-empirical).
+- State of Health predicted to within **2.43 pp RMSE** on held-out test cells (R² 0.996); chemistry-specialist routing lifts under-represented-chemistry grade-accuracy by up to **+5 pp** vs a single global model.
+- Remaining Useful Life predicted to within **1.92 %** of the prediction range (classical) and **2.23 %** (deep learning).
+- Routing recommendation flips under different regulatory regimes — the framework's headline regulatory-sensitivity finding.
+- Training corpus: **1,581 cells across 7 chemistries** (NMC, LFP, NCA, LCO, Zn-ion, Na-ion, other) — public lab datasets (BatteryLife, NASA-PCOE, CALCE, Stanford) plus 130 synthetic Indian-context cells generated via PyBaMM and BLAST-Lite.
 
 ## Quick start
 
@@ -41,8 +71,7 @@ First launch downloads ~90 MB of model weights from the Hugging Face Hub and cac
 
 ## Tech stack
 
-- **Machine learning** — XGBoost · PyTorch · scikit-learn · SHAP · Optuna
-- **Decision theory** — Fuzzy Best-Worst Method · TOPSIS
+- **ML + decision theory** — XGBoost · PyTorch · scikit-learn · SHAP · Optuna · Fuzzy BWM · TOPSIS
 - **Data + simulation** — pandas · NumPy · PyArrow · PyBaMM · BLAST-Lite
 - **Frontend + reporting** — Streamlit · Plotly · ReportLab · Kaleido · jsonschema
 - **Hosting** — Hugging Face Hub (weights) · Streamlit Community Cloud (demo)
