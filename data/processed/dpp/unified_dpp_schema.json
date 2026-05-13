@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://eco-sem8-group-project/dpp/unified_dpp_schema.json",
+  "title": "Unified Battery Digital Product Passport (Battery DPP)",
+  "description": "Reconciliation of EU Regulation 2023/1542 Annex XIII, GBA Battery Pass Data Model v1.2.0 (DIN DKE SPEC 99100:2025-02), and India BWMR 2022/2024/2025 fields. Produced by the EV Battery EoL Routing framework (Sem 8 Term Paper, Group 5).",
+  "type": "object",
+  "required": [
+    "dpp_meta",
+    "identity",
+    "chemistry_and_composition",
+    "performance_and_durability",
+    "state_of_health",
+    "circularity_and_eol",
+    "labels_and_compliance",
+    "provenance"
+  ],
+  "properties": {
+    "dpp_meta": {
+      "type": "object",
+      "required": ["schema_version", "generated_at", "framework", "framework_version"],
+      "properties": {
+        "schema_version": {"type": "string"},
+        "generated_at": {"type": "string", "format": "date-time"},
+        "framework": {"type": "string"},
+        "framework_version": {"type": "string"},
+        "regulatory_alignment": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "List of regulations this DPP intends to satisfy"
+        }
+      }
+    },
+
+    "identity": {
+      "type": "object",
+      "description": "EU Annex XIII §1 General Product Information + GBA io.BatteryPass.GeneralProductInformation + BWMR Form 6 EPR registration identifiers",
+      "required": ["dpp_id", "battery_id", "product_status"],
+      "properties": {
+        "dpp_id": {"type": "string", "description": "UUID for this DPP instance"},
+        "battery_id": {"type": "string", "description": "Cell or pack identifier from source dataset"},
+        "product_status": {
+          "type": "string",
+          "enum": ["original", "repurposed", "re-used", "remanufactured", "waste"],
+          "description": "EU Annex XIII §4(c) status enum"
+        },
+        "manufacturer_name": {"type": ["string", "null"]},
+        "manufacturer_country": {"type": ["string", "null"]},
+        "production_date": {"type": ["string", "null"], "format": "date"},
+        "placed_on_market_date": {"type": ["string", "null"], "format": "date"},
+        "form_factor": {"type": ["string", "null"], "description": "Cylindrical / Prismatic / Pouch / Pack"}
+      }
+    },
+
+    "chemistry_and_composition": {
+      "type": "object",
+      "description": "EU Annex XIII §1(b), §2(a) Material Composition + GBA io.BatteryPass.MaterialComposition",
+      "required": ["cathode_chemistry"],
+      "properties": {
+        "cathode_chemistry": {"type": "string", "description": "NMC | LFP | LCO | NCA | LMO | Zn-ion | Na-ion | other"},
+        "anode_chemistry": {"type": ["string", "null"]},
+        "electrolyte_type": {"type": ["string", "null"]},
+        "critical_raw_materials_present": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Subset of {Co, Li, Ni, natural graphite, REE} present per EU CRM Act 2024"
+        },
+        "hazardous_substances": {
+          "type": "object",
+          "properties": {
+            "mercury": {"type": "boolean"},
+            "cadmium": {"type": "boolean"},
+            "lead": {"type": "boolean"}
+          }
+        }
+      }
+    },
+
+    "performance_and_durability": {
+      "type": "object",
+      "description": "EU Annex XIII §1(g)-(p) + GBA io.BatteryPass.Performance",
+      "required": ["rated_capacity_Ah", "voltage_min_V", "voltage_max_V"],
+      "properties": {
+        "rated_capacity_Ah": {"type": "number"},
+        "nominal_voltage_V": {"type": ["number", "null"]},
+        "voltage_min_V": {"type": "number"},
+        "voltage_max_V": {"type": "number"},
+        "operating_temp_min_C": {"type": ["number", "null"]},
+        "operating_temp_max_C": {"type": ["number", "null"]},
+        "expected_lifetime_cycles": {"type": ["integer", "null"]},
+        "capacity_threshold_for_exhaustion_pct": {
+          "type": ["number", "null"],
+          "description": "EV-only per EU §1(k)"
+        },
+        "c_rate_relevant_test": {"type": ["number", "null"]},
+        "initial_round_trip_efficiency": {"type": ["number", "null"]},
+        "internal_resistance_ohm": {"type": ["number", "null"]}
+      }
+    },
+
+    "state_of_health": {
+      "type": "object",
+      "description": "EU Annex XIII §4(a)-(d) Individual battery SoH/use information. Restricted to legitimate-interest parties under §4 access tier.",
+      "required": ["soh_percent", "cycles_completed", "estimation_method", "last_assessed"],
+      "properties": {
+        "soh_percent": {"type": "number", "minimum": 0, "maximum": 110},
+        "soh_at_market_percent": {"type": ["number", "null"], "description": "SoH when placed on market (typically ~100%)"},
+        "rul_remaining_cycles": {"type": ["number", "null"]},
+        "cycles_completed": {"type": "integer", "minimum": 0},
+        "estimation_method": {"type": "string"},
+        "estimation_confidence": {
+          "type": "object",
+          "properties": {
+            "metric": {"type": "string"},
+            "value": {"type": "number"},
+            "validation_set": {"type": "string"}
+          }
+        },
+        "last_assessed": {"type": "string", "format": "date-time"},
+        "data_source": {"type": "string", "description": "field | lab | simulated"},
+        "negative_events_log": {
+          "type": "array",
+          "items": {"type": "object"},
+          "description": "EU §4(d) accidents and operating environment log"
+        }
+      }
+    },
+
+    "carbon_footprint": {
+      "type": "object",
+      "description": "EU Annex XIII §1(c), Article 7 + GBA io.BatteryPass.CarbonFootprint. Placeholder for stage-9 LCA integration.",
+      "properties": {
+        "carbon_footprint_kgCO2eq_per_kWh": {"type": ["number", "null"]},
+        "performance_class": {"type": ["string", "null"], "description": "EU CFPC tier (A-F per Article 7 once ratified)"},
+        "lifecycle_stage_breakdown_kgCO2eq_per_kWh": {
+          "type": "object",
+          "properties": {
+            "manufacturing": {"type": ["number", "null"]},
+            "distribution": {"type": ["number", "null"]},
+            "use_phase": {"type": ["number", "null"]},
+            "end_of_life": {"type": ["number", "null"]}
+          }
+        },
+        "allocation_method": {"type": ["string", "null"]},
+        "calculation_status": {
+          "type": "string",
+          "enum": ["computed", "literature_default", "placeholder"]
+        }
+      }
+    },
+
+    "supply_chain_due_diligence": {
+      "type": "object",
+      "description": "EU Annex XIII §1(d), Article 52(3) + GBA io.BatteryPass.SupplyChainDueDiligence. Placeholder unless framework wired to a sourcing data provider.",
+      "properties": {
+        "policy_url": {"type": ["string", "null"]},
+        "cobalt_origin": {"type": "array", "items": {"type": "string"}},
+        "lithium_origin": {"type": "array", "items": {"type": "string"}},
+        "nickel_origin": {"type": "array", "items": {"type": "string"}},
+        "graphite_origin": {"type": "array", "items": {"type": "string"}},
+        "third_party_audit_report_id": {"type": ["string", "null"]},
+        "calculation_status": {
+          "type": "string",
+          "enum": ["computed", "literature_default", "placeholder"]
+        }
+      }
+    },
+
+    "circularity_and_eol": {
+      "type": "object",
+      "description": "EU Annex XIII §1(e)-(f), §1(s) End-of-Life Management + GBA io.BatteryPass.Circularity + India BWMR EPR Schedules. PRIMARY OUTPUT of this framework.",
+      "required": ["recommended_route", "route_ranking_method", "grade", "epr_compliance"],
+      "properties": {
+        "recycled_content_share": {
+          "type": "object",
+          "description": "EU §1(e) per-material recycled fraction. Placeholder unless audited supplier data is available.",
+          "properties": {
+            "cobalt": {"type": ["number", "null"]},
+            "lithium": {"type": ["number", "null"]},
+            "nickel": {"type": ["number", "null"]},
+            "lead": {"type": ["number", "null"]}
+          }
+        },
+        "renewable_content_share": {"type": ["number", "null"], "description": "EU §1(f)"},
+        "grade": {
+          "type": "string",
+          "enum": ["A", "B", "C", "D"],
+          "description": "Internal A-D classification driven by SoH thresholds"
+        },
+        "recommended_route": {
+          "type": "string",
+          "enum": [
+            "Grid-scale ESS",
+            "Home/Distributed ESS",
+            "Component Reuse",
+            "Direct Recycling"
+          ]
+        },
+        "route_score": {"type": ["number", "null"], "description": "TOPSIS relative closeness for the recommended route"},
+        "route_ranking_method": {"type": "string"},
+        "mcdm_criteria": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Canonical 6-criterion set: SoH, Value, Carbon, Compliance, Safety, EPR Return"
+        },
+        "mcdm_weights": {
+          "type": "object",
+          "description": "Defuzzified normalized criterion weights (Fuzzy BWM)",
+          "additionalProperties": {"type": "number"}
+        },
+        "all_route_scores": {
+          "type": "array",
+          "description": "TOPSIS closeness for every alternative",
+          "items": {
+            "type": "object",
+            "properties": {
+              "alternative": {"type": "string"},
+              "closeness": {"type": "number"},
+              "rank": {"type": "integer"}
+            }
+          }
+        },
+        "sensitivity_robustness": {
+          "type": "object",
+          "description": "Stability of the rank-1 alternative across weight scenarios. Placeholder until Stage 9/10 sensitivity sweep is wired in.",
+          "properties": {
+            "spearman_rho": {"type": ["number", "null"]},
+            "scenarios_evaluated": {"type": ["integer", "null"]}
+          }
+        },
+        "epr_compliance": {
+          "type": "object",
+          "description": "India BWMR Schedules I-V (recovery, recycled-content, EPR Return)",
+          "required": ["recovery_target_pct", "recycled_content_target_pct"],
+          "properties": {
+            "obligated_party": {"type": ["string", "null"]},
+            "take_back_route": {"type": ["string", "null"]},
+            "recovery_target_fy": {"type": "string"},
+            "recovery_target_pct": {"type": "number"},
+            "recycled_content_target_year": {"type": "string"},
+            "recycled_content_target_pct": {"type": "number"},
+            "epr_certificate_id": {"type": ["string", "null"]}
+          }
+        }
+      }
+    },
+
+    "labels_and_compliance": {
+      "type": "object",
+      "description": "EU Annex XIII §1(q)-(r) + GBA io.BatteryPass.Labels",
+      "properties": {
+        "separate_collection_symbol_present": {"type": "boolean"},
+        "heavy_metal_marking": {"type": ["string", "null"]},
+        "eu_declaration_of_conformity_id": {"type": ["string", "null"]},
+        "bwmr_compliance_form": {"type": ["string", "null"]},
+        "ce_marking": {"type": "boolean"}
+      }
+    },
+
+    "dismantling_and_safety": {
+      "type": "object",
+      "description": "EU Annex XIII §2(c)-(d) restricted-access information. Public DPP exposes only the access-level pointer.",
+      "properties": {
+        "dismantling_diagram_url": {"type": ["string", "null"]},
+        "disassembly_sequence_url": {"type": ["string", "null"]},
+        "tools_required": {"type": "array", "items": {"type": "string"}},
+        "access_level": {
+          "type": "string",
+          "enum": ["public", "legitimate_interest", "authorities_only"],
+          "default": "legitimate_interest"
+        }
+      }
+    },
+
+    "provenance": {
+      "type": "object",
+      "required": ["data_sources", "schema_validated"],
+      "properties": {
+        "data_sources": {"type": "array", "items": {"type": "string"}},
+        "model_artifacts": {"type": "array", "items": {"type": "string"}},
+        "schema_validated": {"type": "boolean"},
+        "coverage_pct": {"type": ["number", "null"]}
+      }
+    }
+  }
+}

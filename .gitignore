@@ -5,7 +5,21 @@
 # ---------- Datasets (all data, raw + processed + regulatory) ----------
 # Leading slash anchors to project root so `src/data/` (Python source)
 # is NOT excluded by these rules.
-/data/
+#
+# Default: everything under /data/ is ignored. Two small files used by the
+# live demo at runtime are explicitly opted back in via the descending-pattern
+# trick (ignore contents, allow specific subdirs, ignore THEIR contents,
+# allow specific files). Both are <50 KB.
+/data/*
+!/data/processed/
+/data/processed/*
+!/data/processed/dpp/
+!/data/processed/mcdm_weights/
+/data/processed/dpp/*
+!/data/processed/dpp/unified_dpp_schema.json
+/data/processed/mcdm_weights/*
+!/data/processed/mcdm_weights/fuzzy_bwm_input.csv
+
 /manually-downloaded-data/
 /research-papers/
 /freshly-downloaded-papers/
@@ -18,10 +32,20 @@ venv/
 
 # ---------- All Markdown documents (shared via Drive, not git) ----------
 *.md
+# But always ship the public-facing READMEs.
+!README.md
+!frontend/README.md
 
-# ---------- Trained model artifacts (regenerable from scripts) ----------
-# Anchored to root so `src/models/` (Python source) is NOT excluded.
+# ---------- Trained model artifacts ----------
+# Hosted on the Hugging Face Hub (cmpunkmannu/hybrid-ml-mcdm-battery-eol);
+# fetched at runtime via huggingface_hub.hf_hub_download. Local /models/
+# is the training-side output directory only.
 /models/
+
+# ---------- Internal sample / validation artefacts ----------
+# Sample PDFs, screenshots, downloaded DPP JSONs Rishabh uses to vet the
+# demo before push. Local-only — never push.
+/sample-data-testing/
 
 # ---------- Run-time outputs ----------
 # figures + DPP JSONs are regenerable; keep results/tables/ in-repo for

@@ -1,0 +1,7 @@
+criterion,n_papers,tfn_lower,tfn_middle,tfn_upper,tfn_lower_normalized,tfn_middle_normalized,tfn_upper_normalized
+SoH,0,,,,,,
+Value,1,0.253,0.253,0.253,0.36006,0.36006,0.36006
+Carbon,3,0.09822,0.11667,0.13512,0.13978,0.16604,0.1923
+Compliance,6,0.03843,0.18661,0.33479,0.05469,0.26558,0.47646
+Safety,1,0.04999,0.04999,0.04999,0.07114,0.07114,0.07114
+EPR Return,4,0.05961,0.09639,0.13317,0.08483,0.13718,0.18952
