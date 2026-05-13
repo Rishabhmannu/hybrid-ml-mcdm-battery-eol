@@ -1,0 +1,18 @@
+# Streamlit demo runtime dependencies — kept slim for fast Streamlit Cloud cold-start.
+# Training-only libraries (pybamm, optuna, shap, lightgbm, datasets, ...) live in
+# the main repo's requirements.txt and are deliberately NOT pulled in here.
+
+streamlit>=1.40
+xgboost>=3.0
+torch>=2.0
+scikit-learn>=1.6
+pandas>=2.0
+numpy>=2.0
+pyarrow>=18
+joblib>=1.4
+plotly>=6.0
+matplotlib>=3.10
+jsonschema>=4.0
+reportlab>=4.0
+kaleido>=0.2
+huggingface_hub>=0.25

@@ -1,0 +1,78 @@
+{
+  "BL_HUST_HUST_2-8": {
+    "headline": "The poster child — 1481 cycles, still grade A",
+    "walkthrough": "Healthy LFP cell that ran for 1481 cycles and still holds 81.7% SoH. Both anomaly models pass. RUL: XGBoost says 184 cycles to EoL, TCN says 329 — that gap is the inherent uncertainty for healthy cells far from EoL. Drag the slider from 100 → 1481 to watch the LFP plateau-then-knee curve unfold."
+  },
+  "BL_CALB_CALB_0_B187": {
+    "headline": "Anomaly-gate showcase — out-of-distribution cell",
+    "walkthrough": "Automotive-grade 58 Ah prismatic NMC — far larger than the 2–5 Ah lab cells dominating training. Both anomaly models flag it hard (VAE error 88× the threshold). The framework correctly says 'predictions unreliable' — exactly what you want when a real fleet cell hits a model trained mostly on lab data."
+  },
+  "BL_MICH_EXP_MICH_10R_pouch_NMC_25C_0-100_0.2-1.5C": {
+    "headline": "NMC pouch — sitting on the grade B/C boundary",
+    "walkthrough": "U-Michigan experimental NMC pouch at 69% SoH, right at the B/C border. Drag the cycle slider to early cycles to see the cell in grade A, then to the end to see grade B. Both anomaly models flag the late-life signature."
+  },
+  "BL_MICH_MICH_MCForm26_pouch_NMC_25C_0-100_1-1C_f": {
+    "headline": "Clean grade-C path — model error only 0.3 pp",
+    "walkthrough": "Healthy U-Michigan NMC pouch in grade C. The closest-to-typical cell in the demo pool — anomaly gate passes cleanly. Specialist predicts 47.1% vs observed 46.8% (0.3 pp error). MCDM routes to Component Reuse."
+  },
+  "BL_Stanford_2_Stanford_Nova_Regular_139": {
+    "headline": "Death-march cell — full degradation to ~0% SoH",
+    "walkthrough": "Stanford Nova cell cycled all the way to functional zero. Drag the slider 1 → 1160 to watch a textbook knee-curve develop. The very last data point is a measurement artifact (sudden drop); slide to cycle 1160 for a clean grade-D snapshot. Both RUL models correctly converge to 0."
+  },
+  "BL_MATR_MATR_b2c22": {
+    "headline": "Mid-life LFP — observed 75.2%, grade B",
+    "walkthrough": "MATR-lab LFP cell at 75% SoH. Specialist predicts 77.7% (2.5 pp above observed). MCDM routes to Home/Distributed ESS — the second-life sweet spot for grade B."
+  },
+  "BL_MATR_MATR_b4c42": {
+    "headline": "Full-pipeline grade-C path → Component Reuse",
+    "walkthrough": "MATR-lab LFP at 48% SoH. Specialist predicts 56.7% — a 7 pp over-estimate that honestly surfaces model limits on deeply-degraded cells. Look at the SHAP plot to see which features the model leaned on. MCDM routes to Component Reuse."
+  },
+  "BL_MATR_MATR_b4c15": {
+    "headline": "End-of-life LFP — observed 36%, recycle path",
+    "walkthrough": "MATR-lab LFP at 36% SoH. Specialist predicts 39.2% (3.5 pp error). MCDM routes to Direct Recycling under almost every regime — there's no meaningful disagreement on this cell."
+  },
+  "BL_Tongji_Tongji1_CY45-05_1--6": {
+    "headline": "Tongji NCA — minority-chemistry routing in action",
+    "walkthrough": "NCA was a minority chemistry in training (107 cells of 1581). The chemistry-router lifts grade-accuracy by +1.96 pp here vs the global model. Specialist matches observed (81.8%) almost exactly."
+  },
+  "BL_SNL_SNL_18650_NCA_15C_0-100_0.5-1C_a": {
+    "headline": "Sandia NCA 18650 — full lab signature",
+    "walkthrough": "Classic 18650 NCA from Sandia at 79.2% SoH, right on the A/B border. Specialist predicts 81.3%, a 2 pp delta. Both anomaly models flag the late-stage degradation pattern."
+  },
+  "NA_PCOE_B0034": {
+    "headline": "NASA-PCOE B0034 — a classic prognostics benchmark",
+    "walkthrough": "The famous NASA-PCOE cell, used in dozens of RUL papers. 64% SoH at cycle 197 — grade B. Specialist predicts 65.5% (1.5 pp). VAE flags because LCO's discharge curve differs from the corpus average; IsoForest accepts."
+  },
+  "BL_CALCE_CALCE_CS2_33": {
+    "headline": "CALCE LCO — deepest degradation in the demo pool",
+    "walkthrough": "U-Maryland CALCE LCO cycled to 9.22% SoH. Specialist predicts 28.2% — an 18 pp over-estimate that honestly shows model limits on heavily-degraded minority-chemistry cells. MCDM correctly routes to Direct Recycling under every regime."
+  },
+  "BL_ZN-coin_ZN-coin_449-1_20240104212736_06_3": {
+    "headline": "Zinc-ion coin cell — clean grade-A non-lithium trajectory",
+    "walkthrough": "Zinc-ion coin at 96.4% SoH after 479 cycles. Both anomaly models pass. Useful for showing how the framework handles non-lithium chemistries — Zn-ion has 140 cells in training, enough to characterize."
+  },
+  "BL_ZN-coin_ZN-coin_209-2_20231205230252_07_8": {
+    "headline": "Zn-ion at grade C — alternative-chemistry routing",
+    "walkthrough": "Zinc-ion at 50.2% SoH (grade C). MCDM under different regimes can pick different routes here — try BWMR-Heavy vs Literature Mean and compare the recommendation. Both anomaly models pass."
+  },
+  "BL_NA-ion_NA-ion_270040-8-6-15": {
+    "headline": "Sodium-ion — next-gen chemistry for grid storage",
+    "walkthrough": "Sodium-ion at 88.1% SoH. Both anomaly models flag (Na-ion has only 64 training cells, often out-of-distribution). RUL projection: XGB 56 / TCN 83 — useful for seeing model disagreement on data-scarce chemistries."
+  },
+  "BL_NA-ion_NA-ion_270040-5-7-33": {
+    "headline": "Na-ion at grade B — minority-chemistry routing",
+    "walkthrough": "Sodium-ion at 78.2% SoH. Specialist (78.5%) matches observed almost exactly. Use this to see how chemistry-routing rescues minority chemistries where the global model under-performs."
+  },
+  "BL_Tongji_Tongji2_CY25-05_1--22": {
+    "headline": "Tongji 'other'-chemistry cell — edge-case routing",
+    "walkthrough": "A cell whose chemistry tag is 'other' (couldn't be cleanly mapped to one of the 6 standard groups). The router has a dedicated 'other' submodel trained on 55 such cells. Specialist matches observed within 0.2 pp."
+  },
+  "IN_SYNTH_0058_NMC_Delhi_summer_two_wheeler": {
+    "headline": "Synthetic NMC under Delhi summer conditions",
+    "walkthrough": "PyBaMM electrochemical simulation of an NMC two-wheeler battery cycled under Delhi summer climate (35–45 °C ambient). 2501 cycles of synthetic data. RUL collapses to 0 because the simulated cell aged differently than the lab corpus expected — a window into the synthetic-vs-real domain gap."
+  },
+  "IN_SYNTH_LFP_0029_Mumbai_monsoon_two_wheeler": {
+    "headline": "Synthetic LFP under Mumbai monsoon — 12 001 cycles",
+    "walkthrough": "BLAST-Lite semi-empirical LFP simulated under Mumbai monsoon humidity. The longest trajectory in the demo pool by an order of magnitude. Both anomaly gates pass (LFP is well-represented in training). RUL is conservatively 0 — the synthetic distribution is far from the lab-data training distribution."
+  }
+}
