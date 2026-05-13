@@ -5,7 +5,7 @@
 streamlit>=1.40
 xgboost>=3.0
 torch>=2.0
-scikit-learn>=1.6
+scikit-learn==1.6.1
 pandas>=2.0
 numpy>=2.0
 pyarrow>=18
@@ -14,5 +14,6 @@ plotly>=6.0
 matplotlib>=3.10
 jsonschema>=4.0
 reportlab>=4.0
-kaleido>=0.2
+kaleido==0.2.1
 huggingface_hub>=0.25
+shap>=0.48
