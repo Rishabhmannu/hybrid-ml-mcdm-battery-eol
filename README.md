@@ -1,6 +1,6 @@
 # Hybrid ML-MCDM Framework for EV Battery End-of-Life Routing
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-deploying-lightgrey?style=flat-square&logo=streamlit&logoColor=white)](#)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-click%20here-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](https://hybrid-ml-mcdm-battery-eol.streamlit.app)
 [![Model Weights](https://img.shields.io/badge/Model%20Weights-Hugging%20Face-FFD21E?style=flat-square&logo=huggingface&logoColor=white)](https://huggingface.co/cmpunkmannu/hybrid-ml-mcdm-battery-eol)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
 [![License](https://img.shields.io/badge/License-MIT-2EA44F?style=flat-square)](LICENSE)

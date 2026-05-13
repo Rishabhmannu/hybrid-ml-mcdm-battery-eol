@@ -46,9 +46,13 @@ def render_header() -> None:
         "estimation, remaining-useful-life prediction, regulatory-aware route "
         "selection, and Digital Product Passport emission."
     )
-    cols = st.columns(2)
-    cols[0].markdown("**Code**: GitHub repo (link TBD)")
-    cols[1].markdown("**Paper**: preprint (link TBD)")
+    st.markdown(
+        "[![Code](https://img.shields.io/badge/Code-GitHub-181717?style=flat-square&logo=github&logoColor=white)]"
+        "(https://github.com/Rishabhmannu/hybrid-ml-mcdm-battery-eol) "
+        "[![Models](https://img.shields.io/badge/Models-Hugging%20Face-FFD21E?style=flat-square&logo=huggingface&logoColor=white)]"
+        "(https://huggingface.co/cmpunkmannu/hybrid-ml-mcdm-battery-eol) "
+        "[![Paper](https://img.shields.io/badge/Paper-in%20preparation-lightgrey?style=flat-square)](#)"
+    )
 
 
 def _filename_safe(s: str) -> str:
