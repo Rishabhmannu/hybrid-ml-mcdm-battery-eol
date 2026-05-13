@@ -25,6 +25,7 @@ from src.utils.config import PROCESSED_DIR
 
 UNIFIED_PARQUET = PROCESSED_DIR / "cycling" / "unified.parquet"
 SPLITS_JSON = PROCESSED_DIR / "cycling" / "splits.json"
+IMPUTED_RUL_CSV = PROCESSED_DIR / "cycling" / "imputed_rul_labels.csv"
 EOL_THRESHOLD = 0.80
 
 # Per Stage-EDA finding: ir_ohm is 93 % missing and the 4 temperature columns
@@ -114,24 +115,70 @@ class FeatureBundle:
         }
 
 
-def _compute_rul_per_battery(group: pd.DataFrame, eol_threshold: float) -> np.ndarray:
-    """RUL = (cycle of first SoH<EoL) - current cycle. Right-censored otherwise."""
+def _compute_rul_per_battery(
+    group: pd.DataFrame,
+    eol_threshold: float,
+    imputed_eol_map: dict | None = None,
+) -> np.ndarray:
+    """RUL = (cycle of first SoH<EoL) - current cycle. Right-censored otherwise.
+
+    If `imputed_eol_map` is provided and contains this battery's id, use the
+    imputed EoL cycle instead of the right-censoring fallback. The imputed
+    map only matters for cells where SoH never crossed EoL — for cells with
+    a true observed EoL, the observed value is used regardless. This keeps
+    uncensored cells' labels unchanged."""
     cycles = group["cycle"].to_numpy()
     soh = group["soh"].to_numpy()
     below = np.where(soh < eol_threshold)[0]
     if len(below) > 0:
         eol_cycle = cycles[below[0]]
     else:
-        eol_cycle = cycles.max()
+        if imputed_eol_map is not None:
+            bid = group["battery_id"].iloc[0] if "battery_id" in group else None
+            if bid in imputed_eol_map and not np.isnan(imputed_eol_map[bid]):
+                eol_cycle = imputed_eol_map[bid]
+            else:
+                eol_cycle = cycles.max()
+        else:
+            eol_cycle = cycles.max()
     return np.maximum(0, eol_cycle - cycles).astype(float)
 
 
-def _build_feature_frame(df: pd.DataFrame, numeric_features: list) -> pd.DataFrame:
+def compute_battery_censoring(df: pd.DataFrame, eol_threshold: float = EOL_THRESHOLD) -> dict:
+    """Map battery_id → True if right-censored (never reached SoH<EoL).
+
+    Per Iter-3 §3.11.5 RUL diagnostic: 18.9% of corpus is right-censored;
+    censored-cell test RMSE is 3.7× the uncensored-cell RMSE — labels are the
+    dominant gate-failure cause, not the model. This helper is consumed by
+    `load_feature_bundle(exclude_censored_batteries=True)` and by the
+    `scripts/train_xgboost_rul_aft.py` survival-regression script.
+    """
+    g = df.groupby("battery_id", sort=False)
+    min_soh = g["soh"].min()
+    return (min_soh >= eol_threshold).to_dict()
+
+
+def _load_imputed_eol_map() -> dict[str, float]:
+    """Load battery_id → imputed_eol_cycle from `imputed_rul_labels.csv`. Built
+    by `scripts/apply_rul_imputation.py`. Returns empty dict if file missing."""
+    if not IMPUTED_RUL_CSV.exists():
+        return {}
+    df = pd.read_csv(IMPUTED_RUL_CSV)
+    return {str(r["battery_id"]): float(r["imputed_eol_cycle"])
+            for _, r in df.iterrows()
+            if pd.notna(r.get("imputed_eol_cycle"))}
+
+
+def _build_feature_frame(df: pd.DataFrame, numeric_features: list,
+                         imputed_eol_map: dict | None = None) -> pd.DataFrame:
     df = df.copy()
     rul_pieces = []
     for _, group in df.groupby("battery_id", sort=False):
-        rul_pieces.append(pd.Series(_compute_rul_per_battery(group, EOL_THRESHOLD),
-                                    index=group.index))
+        rul_pieces.append(pd.Series(
+            _compute_rul_per_battery(group, EOL_THRESHOLD,
+                                     imputed_eol_map=imputed_eol_map),
+            index=group.index,
+        ))
     df["rul"] = pd.concat(rul_pieces).reindex(df.index)
 
     df["soh_pct"] = df["soh"].clip(lower=0.0, upper=1.5) * 100.0
@@ -176,6 +223,8 @@ def load_feature_bundle(
     include_source_onehot: bool = False,
     include_high_missing: bool = False,
     exclude_capacity_features: bool = False,
+    exclude_censored_batteries: bool = False,
+    use_imputed_rul: bool = False,
     verbose: bool = True,
 ) -> FeatureBundle:
     """
@@ -198,6 +247,20 @@ def load_feature_bundle(
         (Δ, rolling mean/std). Use for the leakage audit — SoH is defined
         as `capacity_Ah / nominal_Ah`, so these features make the regression
         nearly tautological.
+    exclude_censored_batteries : drop right-censored batteries (those that
+        never reached SoH<0.8 in the experimental data) from train + val
+        only. Test stays full so the training script can report both the
+        headline test RMSE AND the uncensored-only test RMSE side-by-side.
+        Per Iter-3 §3.11.5 diagnostic: 18.9 % of corpus is censored; on
+        these cells `_compute_rul_per_battery` fabricates labels via
+        `max(observed_cycle) − current_cycle` which underestimates RUL.
+    use_imputed_rul : replace fabricated RUL labels for right-censored cells
+        with imputed labels from `data/processed/cycling/imputed_rul_labels.csv`
+        (produced by `scripts/apply_rul_imputation.py`). Cells with a true
+        observed EoL keep their original labels. Held-out validation
+        (`scripts/rul_imputation_validation.py`) puts ensemble imputation at
+        ~1.5 % median rel err on cells matching our actual censored cells'
+        truncation depth, vs ~16-19 % implicit error from `max-cycle` fallback.
     """
     numeric_features = (NUMERIC_FEATURES_FULL if include_high_missing
                         else NUMERIC_FEATURES)
@@ -214,7 +277,32 @@ def load_feature_bundle(
                   f"{CAPACITY_LEAK_FEATURES}")
     df = pd.read_parquet(UNIFIED_PARQUET)
     splits = json.loads(SPLITS_JSON.read_text())
-    df = _build_feature_frame(df, numeric_features)
+    imputed_map = _load_imputed_eol_map() if use_imputed_rul else None
+    if use_imputed_rul and verbose:
+        if imputed_map:
+            print(f"  USE-IMPUTED-RUL: loaded {len(imputed_map)} imputed EoL labels "
+                  f"from {IMPUTED_RUL_CSV.name}")
+        else:
+            print(f"  WARNING: --use-imputed-rul set but {IMPUTED_RUL_CSV.name} "
+                  "not found — falling back to max-cycle fabrication")
+    df = _build_feature_frame(df, numeric_features, imputed_eol_map=imputed_map)
+
+    if exclude_censored_batteries:
+        censoring = compute_battery_censoring(df)
+        censored_bids = {bid for bid, c in censoring.items() if c}
+        n_train_before = len(splits.get("train", []))
+        n_val_before = len(splits.get("val", []))
+        splits = {
+            "train": [b for b in splits.get("train", []) if b not in censored_bids],
+            "val":   [b for b in splits.get("val", []) if b not in censored_bids],
+            "test":  splits.get("test", []),  # unchanged for stratified eval
+        }
+        if verbose:
+            print(f"  EXCLUDE-CENSORED: dropped "
+                  f"{n_train_before - len(splits['train'])} censored batteries from train, "
+                  f"{n_val_before - len(splits['val'])} from val. "
+                  f"Test unchanged ({len(splits['test'])} batteries) for "
+                  f"censoring-stratified eval.")
 
     splits_dict = _split_frame(df, splits)
 

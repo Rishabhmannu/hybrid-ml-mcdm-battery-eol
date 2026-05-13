@@ -124,6 +124,30 @@ LSTM_CONFIG = {
 }
 
 # ============================================================
+# TCN HYPERPARAMETERS (Iter-3 §3.13 secondary DL baseline)
+# Bai et al. 2018 (arXiv:1803.01271) reference architecture
+# - num_channels [32,32,64,64] gives 4 blocks, dilations 1,2,4,8
+# - kernel=3 + dilation 8 → receptive field = 1 + 2*(3-1)*(2^4-1) = 61 cycles
+#   (just covers the 60-cycle context window from LSTM_CONFIG)
+# - dropout 0.3 (Tang 2023 RESS regularization recipe; matches LSTM-Iter-2)
+# - AdamW + weight_decay 1e-4 (same recipe as LSTM Iter-2)
+# - patience 8 (Severson 2019 / Hong 2024 short-patience)
+# ============================================================
+TCN_CONFIG = {
+    "input_size": None,                  # set dynamically based on feature count
+    "num_channels": [32, 32, 64, 64],    # 4 TemporalBlocks
+    "kernel_size": 3,
+    "dropout": 0.3,
+    "weight_decay": 1e-4,
+    "learning_rate": 1e-3,
+    "batch_size": 64,
+    "epochs": 200,
+    "patience": 8,
+    "sequence_length": 60,               # match LSTM context window
+    "scheduler": "cosine",
+}
+
+# ============================================================
 # MCDM CONFIGURATION
 # ============================================================
 MCDM_CRITERIA = [
