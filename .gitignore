@@ -47,6 +47,14 @@ venv/
 # demo before push. Local-only — never push.
 /sample-data-testing/
 
+# ---------- Institute-owned and internal scratch files ----------
+# project-guidelines.pdf is the IIIT-A assignment brief (institute-copyrighted).
+# The WIP PDF and the .docx builder are internal-only academic submissions.
+# All three stay on the local disk but are excluded from the public repo.
+/project-guidelines.pdf
+/build_proposal_docx.py
+/Digital Economics Semester 8 - Work in Progress.pdf
+
 # ---------- Run-time outputs ----------
 # figures + DPP JSONs are regenerable; keep results/tables/ in-repo for
 # reproducibility evidence (small JSON / CSV metric files).
