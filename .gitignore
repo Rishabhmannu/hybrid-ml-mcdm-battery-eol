@@ -55,6 +55,33 @@ venv/
 /build_proposal_docx.py
 /Digital Economics Semester 8 - Work in Progress.pdf
 
+# ---------- Teammate work + superseded proposal drafts ----------
+# Teammate's individual variables document, plus early proposal drafts that
+# pre-date the framework. Kept locally for reference; not part of the public
+# release.
+/teammates/
+/report/TOPIC_PROPOSAL_DOCUMENT.docx
+/report/TOPIC_PROPOSAL_DOCUMENT.pdf
+/report/TOPIC_PROPOSAL_Short.docx
+
+# ---------- Internal one-shot scripts ----------
+# Literature-PDF scrapers (each version was a retry strategy for institutional /
+# publisher access) and one-shot utilities. None are reproducible by a third
+# party and none are referenced in the public methodology — they stay local.
+/scripts/download_papers.py
+/scripts/download_papers_v2.py
+/scripts/download_papers_v3.py
+/scripts/download_papers_v4_retry.py
+/scripts/download_papers_v5_unpaywall.py
+/scripts/download_papers_v6_playwright.py
+/scripts/download_via_selenium.py
+/scripts/refetch_stanford.py
+/scripts/regenerate_manual_list.py
+/scripts/extract_bwmr_tables.py
+/scripts/inspect_bwmr.py
+/scripts/build_diagrams.py
+/scripts/validate_and_rename.py
+
 # ---------- Run-time outputs ----------
 # figures + DPP JSONs are regenerable; keep results/tables/ in-repo for
 # reproducibility evidence (small JSON / CSV metric files).
